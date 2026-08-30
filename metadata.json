@@ -1,0 +1,6 @@
+{
+  "name": "What Can I Run",
+  "description": "Paste your PC specs to discover which open-weight AI models fit your hardware, with download links, run commands, and live drops.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

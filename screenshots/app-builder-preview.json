@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "can i run this",
+      "hasCanvas": false,
+      "bodyTextLen": 4170,
+      "bodyTextHash": "7d4d7c54692298f9c45489662dc3154266e91e50c747c892d0430c2fd95dff31",
+      "bodyTextPrefix": "SPONSORED LOCALWEIGHTS·GGUF drops, ranked by what actually fits.",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "can i run this",
+      "hasCanvas": false,
+      "bodyTextLen": 4165,
+      "bodyTextHash": "6e524e06553c5478bdd2cb9a7c31e6a1ee9333d51632ae12cabd3dae2d1eb382",
+      "bodyTextPrefix": "SPONSORED LOCALWEIGHTS·GGUF drops, ranked by what actually fits.",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

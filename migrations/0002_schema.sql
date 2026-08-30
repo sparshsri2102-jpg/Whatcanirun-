@@ -26,16 +26,19 @@ create table if not exists sponsor_slots (
   url text not null,
   tagline text not null,
   slot text not null default 'both',
+  logo text,
   active boolean not null default true
 );
 
-insert into sponsor_slots (company, url, tagline, slot, active)
+alter table sponsor_slots add column if not exists logo text;
+
+insert into sponsor_slots (company, url, tagline, slot, logo, active)
 values
-  ('LOCALWEIGHTS', 'https://huggingface.co', 'GGUF drops, ranked by what actually fits.', 'both', true),
-  ('VRAMHAUS', 'https://ollama.com', 'Run the model. Skip the cloud bill.', 'both', true),
-  ('NIGHTSHIFT GPU', 'https://lmstudio.ai', 'Desktop inference for people with a job in the morning.', 'both', true),
-  ('OPENNODE', 'https://github.com/ggml-org/llama.cpp', 'The runtime the rest of the stack pretends to be.', 'both', true),
-  ('SILICON ATTIC', 'https://unsloth.ai', 'Quants that still think.', 'both', true)
+  ('LOCALWEIGHTS', 'https://huggingface.co', 'GGUF drops, ranked by what actually fits.', 'both', 'https://huggingface.co/front/assets/huggingface_logo-noborder.svg', true),
+  ('VRAMHAUS', 'https://ollama.com', 'Run the model. Skip the cloud bill.', 'both', 'https://ollama.com/public/ollama.png', true),
+  ('NIGHTSHIFT GPU', 'https://lmstudio.ai', 'Desktop inference for people with a job in the morning.', 'both', 'https://lmstudio.ai/favicon.ico', true),
+  ('OPENNODE', 'https://github.com/ggml-org/llama.cpp', 'The runtime the rest of the stack pretends to be.', 'both', 'https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/logo.png', true),
+  ('SILICON ATTIC', 'https://unsloth.ai', 'Quants that still think.', 'both', 'https://unsloth.ai/favicon.ico', true)
 on conflict (company) do nothing;
 
 create table if not exists sponsor_requests (
@@ -44,5 +47,8 @@ create table if not exists sponsor_requests (
   website text not null,
   tagline text not null,
   slot text not null,
+  logo text,
   created_at timestamptz not null default now()
 );
+
+alter table sponsor_requests add column if not exists logo text;

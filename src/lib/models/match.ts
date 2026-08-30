@@ -1,4 +1,5 @@
 import { MODELS } from "./catalog";
+import { estimateTokensPerSec } from "./bandwidth";
 import type { FitKind, MatchResult, Model, ModelFit, ModelTask, Quant, QuantOption, Specs } from "./types";
 
 const TASK_LABEL: Record<ModelTask, string> = {
@@ -32,16 +33,24 @@ export function calcKvCacheGb(model: Model, contextK: number): number {
 }
 
 function pools(specs: Specs) {
-  const vram = Math.max(0, specs.vramGb) * Math.max(1, specs.gpuCount || 1);
+  const count = Math.max(1, specs.gpuCount || 1);
+  const totalVram = Math.max(0, specs.vramGb) * count;
   const ram = Math.max(0, specs.ramGb);
+
   if (specs.unified) {
     const usable = ram * 0.72;
-    return { gpu: usable, hybrid: usable, cpu: usable };
+    return { gpu: usable, hybrid: usable, cpu: usable, totalVram };
   }
+
+  // Deduct ~0.8 GB per secondary card for tensor parallel / split communication buffers
+  const splitBufferLoss = count > 1 ? (count - 1) * 0.8 : 0;
+  const usableGpu = Math.max(0, totalVram * 0.9 - splitBufferLoss);
+
   return {
-    gpu: vram * 0.9,
-    hybrid: vram * 0.9 + ram * 0.5,
+    gpu: usableGpu,
+    hybrid: usableGpu + ram * 0.5,
     cpu: ram * 0.62,
+    totalVram,
   };
 }
 
@@ -67,11 +76,16 @@ function evaluateQuant(quant: Quant, model: Model, specs: Specs, contextK: numbe
     headroomGb = Math.round((p.gpu - totalNeeded) * 10) / 10;
   }
 
+  const speedEst = estimateTokensPerSec(model, quant, fit, specs);
+
   return {
     quant,
     fit,
     headroomGb,
-    speed: speedHint(fit, specs, model),
+    speed: speedEst.tokPerSecLabel,
+    tokPerSec: speedEst.tokPerSecLabel,
+    bandwidthGbS: speedEst.bandwidthGbS,
+    busType: speedEst.busType,
     totalNeededGb: totalNeeded,
   };
 }
@@ -83,6 +97,9 @@ function bestQuant(model: Model, specs: Specs, contextK: number): {
   kvCacheGb: number;
   weightsGb: number;
   totalNeededGb: number;
+  tokPerSec: string;
+  bandwidthGbS: number;
+  busType: string;
   quantOptions: QuantOption[];
 } | null {
   const quantOptions = model.quants.map((q) => evaluateQuant(q, model, specs, contextK));
@@ -96,6 +113,7 @@ function bestQuant(model: Model, specs: Specs, contextK: number): {
 
   const picked = gpuFit || hybridFit || cpuFit || usableOptions[0];
   const kvCache = calcKvCacheGb(model, contextK);
+  const speedEst = estimateTokensPerSec(model, picked.quant, picked.fit, specs);
 
   return {
     quant: picked.quant,
@@ -104,26 +122,22 @@ function bestQuant(model: Model, specs: Specs, contextK: number): {
     kvCacheGb: kvCache,
     weightsGb: picked.quant.vramGb,
     totalNeededGb: picked.totalNeededGb,
+    tokPerSec: speedEst.tokPerSecLabel,
+    bandwidthGbS: speedEst.bandwidthGbS,
+    busType: speedEst.busType,
     quantOptions,
   };
 }
 
-function speedHint(fit: FitKind, specs: Specs, model: Model): string {
-  if (fit === "gpu") {
-    if (specs.unified) return model.paramsB >= 20 ? "~12–25 tok/s unified" : "~25–50 tok/s unified";
-    if (specs.vramGb >= 24) return model.paramsB >= 24 ? "~40–80 tok/s" : "~80–150 tok/s";
-    if (specs.vramGb >= 12) return "~25–50 tok/s";
-    return "~15–30 tok/s";
-  }
-  if (fit === "hybrid") return "partial offload · slower, still usable";
-  if (fit === "cpu") return "CPU · expect single-digit tok/s";
-  return "exceeds available memory";
-}
-
 function why(model: Model, fit: FitKind, quant: Quant, specs: Specs, contextK: number = 8): string {
   const task = model.tasks.filter((t) => t !== "chat").slice(0, 2).map((t) => TASK_LABEL[t]).join(" + ");
-  const where = fit === "gpu" ? "fully on GPU" : fit === "hybrid" ? "GPU + RAM offload" : "CPU RAM";
-  const card = specs.unified ? `${specs.ramGb} GB unified` : `${specs.vramGb} GB VRAM`;
+  const count = Math.max(1, specs.gpuCount || 1);
+  const where = fit === "gpu" ? (count > 1 ? `split across ${count}x GPUs in VRAM` : "fully on GPU") : fit === "hybrid" ? "GPU + RAM offload" : "CPU RAM";
+  const card = specs.unified
+    ? `${specs.ramGb} GB unified`
+    : count > 1
+      ? `${count}x ${specs.vramGb} GB (${count * specs.vramGb} GB total VRAM)`
+      : `${specs.vramGb} GB VRAM`;
   const kv = calcKvCacheGb(model, contextK);
   const total = Math.round((quant.vramGb + kv) * 10) / 10;
   return `${quant.name} is ${quant.vramGb} GB (+${kv} GB @ ${contextK}k context = ${total} GB) · ${where} on ${card}${task ? ` · ${task}` : ""}`;
@@ -152,7 +166,7 @@ export function matchModels(specs: Specs, prefer?: ModelTask, contextK: number =
   for (const model of MODELS) {
     const found = bestQuant(model, specs, contextK);
     if (!found) continue;
-    const { quant, fit, headroomGb, kvCacheGb, weightsGb, totalNeededGb, quantOptions } = found;
+    const { quant, fit, headroomGb, kvCacheGb, weightsGb, totalNeededGb, tokPerSec, bandwidthGbS, busType, quantOptions } = found;
     fits.push({
       model,
       quant,
@@ -160,7 +174,10 @@ export function matchModels(specs: Specs, prefer?: ModelTask, contextK: number =
       headroomGb,
       score: scoreFit(model, fit, quant, headroomGb, prefer),
       why: why(model, fit, quant, specs, contextK),
-      speed: speedHint(fit, specs, model),
+      speed: tokPerSec,
+      tokPerSec,
+      bandwidthGbS,
+      busType,
       kvCacheGb,
       weightsGb,
       totalNeededGb,
@@ -194,8 +211,15 @@ export function matchModels(specs: Specs, prefer?: ModelTask, contextK: number =
   const also = fits.filter((f) => !pickIds.has(f.model.id)).slice(0, 6);
 
   const gpuPicks = picks.filter((p) => p.fit === "gpu").length;
+  const count = Math.max(1, specs.gpuCount || 1);
+  const totalVramText = specs.unified
+    ? `${specs.ramGb} GB Unified`
+    : count > 1
+      ? `${count}x GPUs (${count * specs.vramGb} GB VRAM)`
+      : `${specs.vramGb} GB VRAM`;
+
   const blurb = gpuPicks
-    ? `${gpuPicks} of ${picks.length} run fully on this machine with ${contextK}k context. Bigger weights exist — they just do not fit.`
+    ? `${gpuPicks} of ${picks.length} run fully in ${totalVramText} with ${contextK}k context. Bigger weights exist — they just do not fit.`
     : picks.length
       ? `Nothing here sits fully in VRAM at ${contextK}k context. These are the least-painful offload / CPU options.`
       : `This machine is below the floor for current open-weight LLMs at ${contextK}k context. Try a 3B Q4 on CPU, or add RAM.`;

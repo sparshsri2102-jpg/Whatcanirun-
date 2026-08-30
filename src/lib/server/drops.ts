@@ -153,3 +153,74 @@ export const listDrops = createServerFn({ method: "GET" }).handler(async () => {
   cache = { at: Date.now(), items };
   return items;
 });
+
+export const getRssFeedXml = createServerFn({ method: "GET" }).handler(async () => {
+  const drops = await listDrops();
+  const dateStr = new Date().toUTCString();
+
+  const xmlItems = drops.slice(0, 25).map((d) => `
+    <item>
+      <title><![CDATA[${d.name} [${d.source.toUpperCase()}]]]></title>
+      <link>${d.url}</link>
+      <guid>${d.url}</guid>
+      <pubDate>${new Date(d.when).toUTCString()}</pubDate>
+      <description><![CDATA[${d.summary} · ${d.tags.join(", ")} · Likes: ${d.likes}${d.downloads ? ` · Downloads: ${d.downloads}` : ""}]]></description>
+    </item>`).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>What Can I Run? - Open-Weight Model Drops</title>
+  <link>https://whatcanirun.dev/drops</link>
+  <description>Live stream of new open-weight LLMs, GGUF quants, and llama.cpp releases.</description>
+  <language>en-us</language>
+  <lastBuildDate>${dateStr}</lastBuildDate>
+  <atom:link href="https://whatcanirun.dev/drops/rss" rel="self" type="application/rss+xml" />
+  ${xmlItems}
+</channel>
+</rss>`;
+});
+
+export const sendWebhookTest = createServerFn({ method: "POST" })
+  .validator((d: { webhookUrl: string; vramTierGb?: number }) => d)
+  .handler(async ({ data }) => {
+    const { webhookUrl, vramTierGb } = data;
+    if (!webhookUrl || !webhookUrl.startsWith("http")) {
+      return { ok: false, error: "Please enter a valid HTTP(S) Discord or Slack webhook URL." };
+    }
+
+    try {
+      const payload = {
+        content: `🚨 **[What Can I Run?] New Open-Weight Model Alert**`,
+        embeds: [
+          {
+            title: "🔥 Qwen3.8-27B-GGUF (Unsloth)",
+            url: "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF",
+            description: `A new high-demand GGUF drop was detected! Sized for your hardware filter (${vramTierGb ? `≤${vramTierGb} GB VRAM` : "All models"}).`,
+            color: 5814783,
+            fields: [
+              { name: "Quant Formats", value: "Q4_K_M (17.2 GB), Q5_K_M (20.1 GB), Q8_0 (29.8 GB)", inline: true },
+              { name: "Context Window", value: "256k tokens", inline: true },
+              { name: "Compatibility", value: "Ollama, LM Studio, llama.cpp, vLLM", inline: false },
+            ],
+            footer: { text: "whatcanirun.dev · automated model drop alerts" },
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        return { ok: false, error: `Webhook returned HTTP ${res.status}. Verify webhook URL permissions.` };
+      }
+
+      return { ok: true, message: "Test alert successfully delivered to webhook!" };
+    } catch {
+      return { ok: false, error: "Failed to connect to webhook endpoint." };
+    }
+  });

@@ -65,6 +65,9 @@ export type QuantOption = {
   headroomGb: number;
   speed: string;
   totalNeededGb: number;
+  tokPerSec?: string;
+  bandwidthGbS?: number;
+  busType?: string;
 };
 
 export type ModelFit = {
@@ -75,6 +78,9 @@ export type ModelFit = {
   score: number;
   why: string;
   speed: string;
+  tokPerSec?: string;
+  bandwidthGbS?: number;
+  busType?: string;
   weightsGb?: number;
   kvCacheGb?: number;
   totalNeededGb?: number;

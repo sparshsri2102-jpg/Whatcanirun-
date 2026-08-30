@@ -9,6 +9,7 @@ const FALLBACK: Sponsor[] = [
     url: "https://huggingface.co",
     tagline: "GGUF drops, ranked by what actually fits.",
     slot: "both",
+    logo: "https://huggingface.co/front/assets/huggingface_logo-noborder.svg",
   },
   {
     id: 2,
@@ -16,6 +17,7 @@ const FALLBACK: Sponsor[] = [
     url: "https://ollama.com",
     tagline: "Run the model. Skip the cloud bill.",
     slot: "both",
+    logo: "https://ollama.com/public/ollama.png",
   },
   {
     id: 3,
@@ -23,6 +25,7 @@ const FALLBACK: Sponsor[] = [
     url: "https://lmstudio.ai",
     tagline: "Desktop inference for people with a job in the morning.",
     slot: "both",
+    logo: "https://lmstudio.ai/favicon.ico",
   },
   {
     id: 4,
@@ -30,6 +33,7 @@ const FALLBACK: Sponsor[] = [
     url: "https://github.com/ggml-org/llama.cpp",
     tagline: "The runtime the rest of the stack pretends to be.",
     slot: "both",
+    logo: "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/media/logo.png",
   },
   {
     id: 5,
@@ -37,8 +41,31 @@ const FALLBACK: Sponsor[] = [
     url: "https://unsloth.ai",
     tagline: "Quants that still think.",
     slot: "both",
+    logo: "https://unsloth.ai/favicon.ico",
   },
 ];
+
+function SponsorLogoImage({ logo, company }: { logo?: string | null; company: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!logo || hasError) {
+    return (
+      <span className="inline-flex h-3.5 w-3.5 items-center justify-center border border-line bg-bg text-[9px] font-mono font-bold text-fg">
+        {company.charAt(0).toUpperCase()}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={logo}
+      alt={`${company} logo`}
+      onError={() => setHasError(true)}
+      referrerPolicy="no-referrer"
+      className="inline-block h-3.5 w-3.5 rounded-none object-contain grayscale contrast-125"
+    />
+  );
+}
 
 export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
   const [sponsors, setSponsors] = useState<Sponsor[]>(FALLBACK);
@@ -60,7 +87,7 @@ export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
       <div className="flex items-stretch">
         <Link
           to="/sponsor"
-          className="shrink-0 border-r border-line px-3 py-2 text-fg hover:bg-fg hover:text-bg"
+          className="shrink-0 border-r border-line px-3 py-2 text-fg hover:bg-fg hover:text-bg transition-colors"
         >
           sponsored
         </Link>
@@ -72,11 +99,12 @@ export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
                 href={s.url}
                 target="_blank"
                 rel="noreferrer"
-                className="whitespace-nowrap hover:text-fg"
+                className="flex items-center gap-2 whitespace-nowrap hover:text-fg transition-colors"
               >
-                {s.company}
-                <span className="mx-3 text-dim">·</span>
-                <span className="normal-case tracking-normal text-dim">{s.tagline}</span>
+                <SponsorLogoImage logo={s.logo} company={s.company} />
+                <span className="font-medium text-fg">{s.company}</span>
+                <span className="text-dim">·</span>
+                <span className="normal-case tracking-normal text-muted">{s.tagline}</span>
               </a>
             ))}
           </div>

@@ -56,6 +56,7 @@ export function SpecBench() {
   const [showTuner, setShowTuner] = useState(false);
   const [tunerVram, setTunerVram] = useState(16);
   const [tunerRam, setTunerRam] = useState(32);
+  const [tunerGpuCount, setTunerGpuCount] = useState(1);
   const [tunerUnified, setTunerUnified] = useState(false);
   const [tunerGpu] = useState("Custom Rig");
   const [error, setError] = useState<string | null>(null);
@@ -69,10 +70,23 @@ export function SpecBench() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("whatcanirun_last_specs");
-      if (saved && !result) {
+      if (saved) {
         const specs = JSON.parse(saved) as Specs;
         if (specs && typeof specs.vramGb === "number") {
-          run({ preset: specs, ctx: contextK, skipScroll: true });
+          void matchHardware({
+            data: {
+              presetSpecs: specs,
+              contextK: 8,
+            },
+          }).then((res) => {
+            if ("error" in res) {
+              setError(res.error);
+            } else {
+              setResult(res);
+            }
+          }).catch(() => {
+            /* ignore initial load error */
+          });
         }
       }
     } catch {
@@ -141,16 +155,23 @@ export function SpecBench() {
   }
 
   function handleApplyTuner() {
+    const isMulti = tunerGpuCount > 1 && !tunerUnified;
+    const gpuName = tunerUnified
+      ? `Apple Silicon / APU (${tunerRam}GB Unified)`
+      : isMulti
+        ? `${tunerGpuCount}x Custom GPU (${tunerVram * tunerGpuCount}GB Total VRAM)`
+        : `${tunerGpu} (${tunerVram}GB VRAM)`;
+
     const customSpecs: Specs = {
-      gpu: tunerUnified ? `Apple Silicon / APU (${tunerRam}GB Unified)` : tunerGpu,
+      gpu: gpuName,
       vramGb: tunerUnified ? tunerRam : tunerVram,
       ramGb: tunerRam,
       cpu: "Custom CPU",
       os: tunerUnified ? "macOS" : "Windows / Linux",
       unified: tunerUnified,
-      gpuCount: 1,
+      gpuCount: tunerUnified ? 1 : tunerGpuCount,
       source: "preset",
-      raw: `Tuned: ${tunerUnified ? `${tunerRam}GB Unified` : `${tunerVram}GB VRAM / ${tunerRam}GB RAM`}`,
+      raw: `Tuned: ${tunerUnified ? `${tunerRam}GB Unified` : `${tunerGpuCount}x ${tunerVram}GB VRAM (${tunerGpuCount * tunerVram}GB Total) / ${tunerRam}GB RAM`}`,
     };
     run({ preset: customSpecs, ctx: contextK });
   }
@@ -233,11 +254,41 @@ export function SpecBench() {
       {/* Interactive Rig Tuner Drawer */}
       {showTuner ? (
         <div className="mt-4 border border-line bg-surface p-4 sm:p-5">
-          <div className="text-2xs uppercase tracking-[0.28em] text-muted">rig tuner & what-if simulator</div>
+          <div className="flex items-center justify-between">
+            <div className="text-2xs uppercase tracking-[0.28em] text-muted">rig tuner & multi-gpu what-if simulator</div>
+            <div className="text-2xs font-mono text-dim">
+              {tunerUnified
+                ? `${tunerRam} GB Unified Pool`
+                : `${tunerGpuCount}x GPU (${tunerVram * tunerGpuCount} GB Total VRAM)`}
+            </div>
+          </div>
+
+          {/* Multi-GPU Count Selector */}
+          {!tunerUnified ? (
+            <div className="mt-3 flex items-center gap-2 border-b border-line pb-3">
+              <span className="text-2xs uppercase tracking-widest text-dim">GPU Quantity:</span>
+              {[1, 2, 4, 8].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setTunerGpuCount(count)}
+                  className={cn(
+                    "px-2.5 py-1 text-2xs uppercase tracking-wider border transition-colors",
+                    tunerGpuCount === count
+                      ? "border-fg bg-fg text-bg"
+                      : "border-line text-muted hover:text-fg"
+                  )}
+                >
+                  {count === 1 ? "1x Single" : count === 2 ? "2x Dual" : count === 4 ? "4x Quad" : "8x Cluster"}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <div>
               <div className="flex justify-between text-xs">
-                <span className="text-dim">{tunerUnified ? "Unified Memory" : "VRAM (GPU)"}</span>
+                <span className="text-dim">{tunerUnified ? "Unified Memory" : "VRAM per GPU"}</span>
                 <span className="font-mono text-fg">{tunerUnified ? tunerRam : tunerVram} GB</span>
               </div>
               <input
@@ -279,9 +330,9 @@ export function SpecBench() {
               <button
                 type="button"
                 onClick={handleApplyTuner}
-                className="mt-3 min-h-9 border border-fg bg-fg px-4 text-2xs uppercase tracking-widest text-bg hover:opacity-90"
+                className="mt-3 min-h-9 border border-fg bg-fg px-4 text-2xs uppercase tracking-widest text-bg hover:opacity-90 font-mono"
               >
-                apply specs
+                apply {tunerUnified ? `${tunerRam}GB unified` : `${tunerGpuCount}x ${tunerVram}GB vram`}
               </button>
             </div>
           </div>

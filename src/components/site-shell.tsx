@@ -4,10 +4,11 @@ import { SponsorTicker } from "./sponsor-ticker";
 import { VisitorDock } from "./visitor-dock";
 
 const NAV = [
-  { to: "/", label: "this" },
+  { to: "/", label: "bench" },
   { to: "/models", label: "models" },
   { to: "/drops", label: "drops" },
   { to: "/skills", label: "skills" },
+  { to: "/share", label: "share card" },
 ] as const;
 
 export function SiteShell({ children }: { children: ReactNode }) {

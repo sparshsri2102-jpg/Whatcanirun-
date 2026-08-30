@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AsciiGlobe } from "./ascii-globe";
+import { AsciiRadarMap } from "./ascii-radar-map";
 import { getVisitors, pingVisitor, type VisitorPing } from "@/lib/server/visitors";
 
 function fmtCount(n: number) {
@@ -51,34 +51,36 @@ export function VisitorDock() {
 
   return (
     <section className="border-t border-line bg-surface">
-      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div>
-          <div className="text-2xs uppercase tracking-[0.28em] text-muted">live map</div>
-          <h2 className="mt-2 text-lg">visitors this month</h2>
+          <div className="text-2xs uppercase tracking-[0.28em] text-muted">live telemetry</div>
+          <h2 className="mt-2 text-lg">real-time global visitors</h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
-            Coarse city from timezone only. No accounts, no IPs, no names. Dots are people who opened the
-            page.
+            Coarse location inferred from browser timezone without fingerprinting or tracking cookies.
+            Every blinking node represents an active hardware builder browsing the open-weight registry.
           </p>
           <div className="mt-5 flex items-baseline gap-3">
             <span className="text-3xl tabular-nums tracking-tight">{fmtCount(count)}</span>
-            <span className="text-xs uppercase tracking-widest text-muted">this month</span>
+            <span className="text-xs uppercase tracking-widest text-muted">visitors this month</span>
           </div>
           {you ? (
-            <div className="mt-3 text-xs text-muted">
-              you · {you.toLowerCase()} <span className="dot-live">@</span>
+            <div className="mt-3 text-xs text-muted flex items-center gap-2">
+              <span>you · {you.toLowerCase()}</span>
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
             </div>
           ) : null}
           <ul className="mt-5 space-y-1 text-xs text-muted">
             {live.slice(0, 6).map((v) => (
               <li key={v.id} className="flex justify-between gap-4 border-b border-line py-1">
                 <span className="text-fg">{v.city.toLowerCase()}</span>
-                <span className="tabular-nums">{agoLabel(v.agoSec)}</span>
+                <span className="tabular-nums text-dim">{agoLabel(v.agoSec)}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="overflow-x-auto border border-line bg-bg p-3">
-          <AsciiGlobe visitors={live} />
+
+        <div className="overflow-hidden border border-line bg-bg p-4">
+          <AsciiRadarMap visitors={live} userCity={you} />
         </div>
       </div>
     </section>

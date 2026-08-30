@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "can i run this";
+const APP_NAME = "What Can I Run";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Paste your PC specs. Get the open-weight models that actually fit — download links, run commands, live Hugging Face drops, and GitHub agent skills.",
+          "Paste your PC specs to discover which open-weight AI models fit your hardware, with download links, run commands, and live drops.",
       },
       { name: "theme-color", content: "#0a0a0a" },
     ],

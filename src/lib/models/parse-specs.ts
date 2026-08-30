@@ -84,10 +84,39 @@ export function parseSpecsHeuristic(text: string): Specs | null {
   );
   const cpu = cpuMatch?.[1]?.trim() ?? (apple ? apple.name : "unknown");
 
-  const gpuCount = Math.max(1, (raw.match(/rtx\s*\d{4}/gi) ?? []).length > 1 ? 2 : 1);
+  // Multi-GPU detection (e.g., 2x RTX 3090, dual 4090, 4x A100, nvidia-smi multi device output)
+  let gpuCount = 1;
+  const multiMatch = raw.match(/\b([2-8])\s*x\s*(?:rtx|rx|nvidia|geforce|a100|h100|h200|l40|gpu|\d{4})/i)
+    || raw.match(/\b(?:dual|2x)\s+(?:rtx|geforce|gpu|\d{4})/i)
+    || raw.match(/\b(?:quad|4x)\s+(?:rtx|geforce|gpu|\d{4})/i)
+    || raw.match(/\b(?:octa|8x)\s+(?:rtx|geforce|gpu|\d{4})/i);
+
+  if (multiMatch) {
+    if (multiMatch[1]) {
+      gpuCount = parseInt(multiMatch[1], 10);
+    } else if (/dual|2x/i.test(multiMatch[0])) {
+      gpuCount = 2;
+    } else if (/quad|4x/i.test(multiMatch[0])) {
+      gpuCount = 4;
+    } else if (/octa|8x/i.test(multiMatch[0])) {
+      gpuCount = 8;
+    }
+  } else {
+    // Count distinct GPU lines in nvidia-smi / lspci pastes
+    const nvidiaSmiGpuMatches = raw.match(/\|\s*([0-7])\s+NVIDIA\s+/gi) || raw.match(/GPU\s+([0-7]):/gi);
+    if (nvidiaSmiGpuMatches && nvidiaSmiGpuMatches.length > 1) {
+      gpuCount = Math.min(8, nvidiaSmiGpuMatches.length);
+    } else {
+      const rtxOccurrences = (raw.match(/rtx\s*\d{4}/gi) ?? []).length;
+      if (rtxOccurrences > 1) {
+        gpuCount = Math.min(8, rtxOccurrences);
+      }
+    }
+  }
 
   const unified = Boolean(apple);
-  const gpu = apple?.name ?? gpuHit?.name ?? (vramFromText ? "discrete GPU" : "none");
+  const gpuBaseName = apple?.name ?? gpuHit?.name ?? (vramFromText ? "discrete GPU" : "none");
+  const gpu = gpuCount > 1 && !unified ? `${gpuCount}x ${gpuBaseName}` : gpuBaseName;
   const vramGb = unified
     ? (ramFromText ?? 16)
     : (vramFromText ?? gpuHit?.vram ?? 0);
@@ -106,7 +135,7 @@ export function parseSpecsHeuristic(text: string): Specs | null {
     cpu,
     os,
     unified,
-    gpuCount: gpuHit || apple ? gpuCount : 0,
+    gpuCount: gpuHit || apple ? gpuCount : (vramFromText ? gpuCount : 0),
     source: "paste",
     raw: raw.slice(0, 4000),
   };

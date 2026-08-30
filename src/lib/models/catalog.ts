@@ -1052,6 +1052,20 @@ export const PRESETS: Array<{
     },
   },
   {
+    id: "dual-rtx-3090",
+    label: "2x RTX 3090 (48GB)",
+    hint: "Dual GPU Stacking",
+    specs: {
+      gpu: "2x RTX 3090",
+      vramGb: 24,
+      ramGb: 128,
+      cpu: "AMD Ryzen / Threadripper",
+      os: "Linux",
+      unified: false,
+      gpuCount: 2,
+    },
+  },
+  {
     id: "rtx-5090",
     label: "RTX 5090 32GB",
     hint: "32 GB + 64 GB RAM",

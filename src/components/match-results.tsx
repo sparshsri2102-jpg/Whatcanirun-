@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { MatchResult, ModelFit, QuantOption, RunnerType } from "@/lib/models/types";
+import { Link } from "@tanstack/react-router";
+import type { MatchResult, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
 import { cn } from "@/lib/utils";
 
 function FitBadge({ fit }: { fit: ModelFit["fit"] }) {
@@ -24,11 +25,37 @@ function CopyCmd({ cmd }: { cmd: string }) {
       className="text-2xs uppercase tracking-widest text-muted underline underline-offset-4 hover:text-fg"
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(cmd);
+          if (navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(cmd);
+          } else {
+            const ta = document.createElement("textarea");
+            ta.value = cmd;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+          }
           setDone(true);
           window.setTimeout(() => setDone(false), 1400);
         } catch {
-          /* ignore */
+          try {
+            const ta = document.createElement("textarea");
+            ta.value = cmd;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            setDone(true);
+            window.setTimeout(() => setDone(false), 1400);
+          } catch {
+            /* ignore */
+          }
         }
       }}
     >
@@ -42,28 +69,44 @@ function generateRunCmd(
   fit: ModelFit,
   selectedQuant: string,
   contextK: number = 8,
+  specs?: Specs,
 ): string {
   const m = fit.model;
   const qLower = selectedQuant.toLowerCase();
+  const gpuCount = specs?.gpuCount && specs.gpuCount > 1 ? specs.gpuCount : 1;
 
   switch (runner) {
     case "ollama": {
-      if (m.run.ollama) {
-        if (qLower.includes("q8") || qLower === "q8") return `${m.run.ollama}:q8_0`;
-        if (qLower.includes("q5")) return `${m.run.ollama}:q5_k_m`;
-        if (qLower.includes("q4") || qLower === "q4") return m.run.ollama;
-        return `${m.run.ollama}:${qLower}`;
+      const baseOllama = m.run.ollama ? m.run.ollama : `hf.co/${m.hf}`;
+      let tag = "";
+      if (qLower.includes("q8") || qLower === "q8") tag = ":q8_0";
+      else if (qLower.includes("q5")) tag = ":q5_k_m";
+      else if (qLower.includes("q4") || qLower === "q4") tag = m.run.ollama ? "" : ":q4_k_m";
+      else tag = `:${qLower}`;
+
+      if (gpuCount > 1 && !specs?.unified) {
+        const devList = Array.from({ length: gpuCount }, (_, i) => i).join(",");
+        return `CUDA_VISIBLE_DEVICES=${devList} ollama run ${baseOllama}${tag}`;
       }
-      return `ollama run hf.co/${m.hf}:${selectedQuant}`;
+      return `ollama run ${baseOllama}${tag}`;
     }
     case "lmstudio": {
+      if (gpuCount > 1) {
+        return `lms load ${m.hf} --gpu=max --tensor-split ${Array(gpuCount).fill(1).join(",")} -c ${contextK * 1024}`;
+      }
       return `lms load ${m.hf} --gpu=max -c ${contextK * 1024}`;
     }
     case "llamacpp": {
+      if (gpuCount > 1) {
+        return `./llama-cli -hf ${m.hf} -ngl 99 -sm row -c ${contextK * 1024}`;
+      }
       if (m.run.llamacpp) return m.run.llamacpp;
       return `./llama-cli -hf ${m.hf} -ngl 99 -c ${contextK * 1024}`;
     }
     case "vllm": {
+      if (gpuCount > 1) {
+        return `vllm serve ${m.hf} --tensor-parallel-size ${gpuCount} --max-model-len ${contextK * 1024} --gpu-memory-utilization 0.92`;
+      }
       return `vllm serve ${m.hf} --max-model-len ${contextK * 1024} --gpu-memory-utilization 0.90`;
     }
     case "jan": {
@@ -74,7 +117,7 @@ function generateRunCmd(
   }
 }
 
-function PickCard({ fit, rank, contextK }: { fit: ModelFit; rank: number; contextK: number }) {
+function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number; contextK: number; specs: Specs }) {
   const m = fit.model;
   const [selectedQuantName, setSelectedQuantName] = useState<string>(fit.quant.name);
   const [runner, setRunner] = useState<RunnerType>("ollama");
@@ -85,13 +128,13 @@ function PickCard({ fit, rank, contextK }: { fit: ModelFit; rank: number; contex
 
   const currentQuant = activeOption ? activeOption.quant : fit.quant;
   const currentFit = activeOption ? activeOption.fit : fit.fit;
-  const currentSpeed = activeOption ? activeOption.speed : fit.speed;
+  const currentSpeed = activeOption?.tokPerSec || activeOption?.speed || fit.tokPerSec || fit.speed;
   const currentHeadroom = activeOption ? activeOption.headroomGb : fit.headroomGb;
 
   const weightsGb = currentQuant.vramGb;
   const kvCacheGb = fit.kvCacheGb ?? 0.5;
   const totalMem = Math.round((weightsGb + kvCacheGb) * 10) / 10;
-  const cmd = generateRunCmd(runner, fit, currentQuant.name, contextK);
+  const cmd = generateRunCmd(runner, fit, currentQuant.name, contextK, specs);
 
   return (
     <article className="border border-line bg-surface p-4 sm:p-5">
@@ -162,8 +205,8 @@ function PickCard({ fit, rank, contextK }: { fit: ModelFit; rank: number; contex
           </dd>
         </div>
         <div>
-          <dt className="text-dim">speed</dt>
-          <dd className="mt-0.5">{currentSpeed}</dd>
+          <dt className="text-dim">est. speed / bandwidth</dt>
+          <dd className="mt-0.5 font-mono text-fg">{currentSpeed}</dd>
         </div>
       </dl>
 
@@ -174,7 +217,7 @@ function PickCard({ fit, rank, contextK }: { fit: ModelFit; rank: number; contex
       {/* Multi-Engine Runner Switcher */}
       <div className="mt-4">
         <div className="flex items-center justify-between text-2xs uppercase tracking-widest text-dim mb-1.5">
-          <span>run command ({runner}):</span>
+          <span>run command ({runner}){specs.gpuCount > 1 ? ` · ${specs.gpuCount}x GPU Stacking` : ""}:</span>
           <div className="flex gap-2">
             {(["ollama", "lmstudio", "llamacpp", "vllm"] as RunnerType[]).map((r) => (
               <button
@@ -192,7 +235,7 @@ function PickCard({ fit, rank, contextK }: { fit: ModelFit; rank: number; contex
           </div>
         </div>
         <div className="flex items-start justify-between gap-3 border border-line bg-bg px-3 py-2">
-          <code className="break-all text-xs">{cmd}</code>
+          <code className="break-all text-xs font-mono">{cmd}</code>
           <CopyCmd cmd={cmd} />
         </div>
       </div>
@@ -222,30 +265,54 @@ export function MatchResults({
   const s = result.specs;
   const ctx = result.contextK ?? 8;
 
+  // Build query string for sharing
+  const shareParams = new URLSearchParams({
+    gpu: s.gpu,
+    vram: String(s.vramGb),
+    ram: String(s.ramGb),
+    cpu: s.cpu,
+    os: s.os,
+    unified: s.unified ? "1" : "0",
+    gpus: String(s.gpuCount || 1),
+    ctx: String(ctx),
+  });
+
   return (
     <section>
       <div className="border border-line p-4 sm:p-5">
-        <div className="flex items-center justify-between">
-          <div className="text-2xs uppercase tracking-[0.28em] text-muted">your rig</div>
-          {onContextChange ? (
-            <div className="flex items-center gap-1 text-2xs uppercase tracking-widest text-muted">
-              <span>active context:</span>
-              <span className="font-mono text-fg">{ctx}k</span>
-            </div>
-          ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-2xs uppercase tracking-[0.28em] text-muted">your rig configuration</div>
+          <div className="flex items-center gap-3">
+            {onContextChange ? (
+              <div className="flex items-center gap-1 text-2xs uppercase tracking-widest text-muted">
+                <span>context:</span>
+                <span className="font-mono text-fg">{ctx}k</span>
+              </div>
+            ) : null}
+            <Link
+              to={`/share?${shareParams.toString()}`}
+              className="border border-fg bg-fg px-2.5 py-1 text-2xs font-mono text-bg uppercase tracking-wider hover:opacity-90 transition-opacity"
+            >
+              ⚡ export & share card
+            </Link>
+          </div>
         </div>
         <div className="mt-3 grid gap-3 text-sm sm:grid-cols-4">
           <div>
-            <div className="text-dim">gpu</div>
-            <div className="mt-1">{s.gpu}</div>
+            <div className="text-dim">gpu / accelerators</div>
+            <div className="mt-1 font-mono">
+              {s.gpuCount > 1 && !s.unified ? `${s.gpuCount}x ` : ""}{s.gpu}
+            </div>
           </div>
           <div>
-            <div className="text-dim">{s.unified ? "unified" : "vram"}</div>
-            <div className="mt-1 tabular-nums">{s.unified ? `${s.ramGb} GB` : `${s.vramGb} GB`}</div>
+            <div className="text-dim">{s.unified ? "unified pool" : "total vram pool"}</div>
+            <div className="mt-1 tabular-nums font-mono">
+              {s.unified ? `${s.ramGb} GB Unified` : `${s.vramGb * Math.max(1, s.gpuCount || 1)} GB VRAM`}
+            </div>
           </div>
           <div>
             <div className="text-dim">system ram</div>
-            <div className="mt-1 tabular-nums">{s.ramGb} GB</div>
+            <div className="mt-1 tabular-nums font-mono">{s.ramGb} GB</div>
           </div>
           <div>
             <div className="text-dim">os / cpu</div>
@@ -257,10 +324,10 @@ export function MatchResults({
         <p className="mt-4 text-sm text-muted">{result.blurb}</p>
       </div>
 
-      <h2 className="mt-8 text-sm uppercase tracking-[0.22em] text-muted">top fits</h2>
+      <h2 className="mt-8 text-sm uppercase tracking-[0.22em] text-muted">top runnable models</h2>
       <div className="mt-3 grid gap-4">
         {result.picks.map((p, i) => (
-          <PickCard key={p.model.id} fit={p} rank={i + 1} contextK={ctx} />
+          <PickCard key={p.model.id} fit={p} rank={i + 1} contextK={ctx} specs={s} />
         ))}
       </div>
 
@@ -277,7 +344,7 @@ export function MatchResults({
                   <div className="text-sm">
                     {p.model.name}{" "}
                     <span className="text-muted">
-                      · {p.quant.name} {p.quant.vramGb} GB
+                      · {p.quant.name} {p.quant.vramGb} GB ({p.speed})
                     </span>
                   </div>
                   <div className="text-xs text-muted">{p.model.summary}</div>

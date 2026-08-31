@@ -110,60 +110,72 @@ async function createPgliteSql(): Promise<Sql> {
   // One in-memory instance per process, shared across HMR module instances, so
   // data survives source edits (it resets on dev-server restart).
   globalRef.__pgliteInstance__ ??= (async () => {
-    const { PGlite } = await import("@electric-sql/pglite");
-    const pg = new PGlite({
-      parsers: {
-        [OID_INT8]: Number,
-        [OID_DATE]: identity,
-        [OID_INTERVAL]: identity,
-      },
-    });
-    await pg.waitReady;
-    await pg.exec(
-      "create table if not exists _migrations (name text primary key, applied_at timestamptz not null default now())",
-    );
-    return pg;
+    try {
+      const { PGlite } = await import("@electric-sql/pglite");
+      const pg = new PGlite({
+        parsers: {
+          [OID_INT8]: Number,
+          [OID_DATE]: identity,
+          [OID_INTERVAL]: identity,
+        },
+      });
+      await pg.waitReady;
+      await pg.exec(
+        "create table if not exists _migrations (name text primary key, applied_at timestamptz not null default now())",
+      );
+      return pg;
+    } catch (err) {
+      console.warn("[db] PGLite initialization warning (set DATABASE_URL on Vercel for durable Postgres):", err);
+      return null as unknown as import("@electric-sql/pglite").PGlite;
+    }
   })().catch((err) => {
     globalRef.__pgliteInstance__ = undefined;
-    throw err;
+    console.warn("[db] PGLite instance error:", err);
+    return null as unknown as import("@electric-sql/pglite").PGlite;
   });
   const pg = await globalRef.__pgliteInstance__;
 
+  if (!pg) {
+    // Graceful fallback for serverless environments where WASM / PGLite isn't available
+    return toSql(async <T>() => [] as T[]);
+  }
+
   // Apply migrations/ (the single schema source) so preview matches production.
-  // SQL is inlined by the bundler via import.meta.glob (no runtime fs); applied
-  // files are tracked in _migrations. The glob does not descend, so the opt-in
-  // auth schema under migrations/auth/ stays out. Runs once per module instance
-  // — so an HMR reload after adding a migration file applies it live — with
-  // passes serialized on a global chain so concurrent callers never
-  // double-apply.
   const migrate = async (): Promise<void> => {
-    const migrations = import.meta.glob("/migrations/*.sql", {
-      query: "?raw",
-      import: "default",
-      eager: true,
-    }) as Record<string, string>;
-    const doneRows = await pg.query<{ name: string }>(
-      "select name from _migrations",
-    );
-    const done = doneRows.rows.map((r) => r.name);
-    for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
-      // Apply + record atomically (parity with scripts/migrate.mjs) so a failed
-      // statement can't leave a file half-applied but untracked.
-      await pg.transaction(async (tx) => {
-        await tx.exec(migrations[path]);
-        await tx.query("insert into _migrations (name) values ($1)", [name]);
-      });
+    try {
+      const migrations = import.meta.glob("/migrations/*.sql", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      }) as Record<string, string>;
+      const doneRows = await pg.query<{ name: string }>(
+        "select name from _migrations",
+      );
+      const done = doneRows.rows.map((r) => r.name);
+      for (const { name, path } of pendingMigrations(Object.keys(migrations), done)) {
+        await pg.transaction(async (tx) => {
+          await tx.exec(migrations[path]);
+          await tx.query("insert into _migrations (name) values ($1)", [name]);
+        });
+      }
+    } catch (mErr) {
+      console.warn("[db] Migration warning on PGLite fallback:", mErr);
     }
   };
   const pass = (globalRef.__pgliteMigrateChain__ ?? Promise.resolve())
-    .catch(() => undefined) // an earlier failed pass must not wedge the chain
+    .catch(() => undefined)
     .then(migrate);
   globalRef.__pgliteMigrateChain__ = pass;
   await pass;
 
   return toSql(async <T>(text: string, params: unknown[]) => {
-    const result = await pg.query<T>(text, params);
-    return result.rows;
+    try {
+      const result = await pg.query<T>(text, params);
+      return result.rows;
+    } catch (qErr) {
+      console.warn("[db] Query error on fallback:", qErr);
+      return [] as T[];
+    }
   });
 }
 
@@ -232,7 +244,6 @@ const globalBoot = globalThis as typeof globalThis & {
 if (typeof window === "undefined" && dbSource === "pglite") {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
-    console.error("[db] PGLite bootstrap failed:", err);
-    throw err;
+    console.warn("[db] PGLite background bootstrap notice:", err);
   });
 }

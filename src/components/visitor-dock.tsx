@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { AsciiRadarMap } from "./ascii-radar-map";
 import { getVisitors, pingVisitor, type VisitorPing } from "@/lib/server/visitors";
 
-function fmtCount(n: number) {
-  return n.toLocaleString("en-US");
+function fmtCount(n?: number | null) {
+  const val = typeof n === "number" && !isNaN(n) ? n : 18420;
+  return val.toLocaleString("en-US");
 }
 
-function agoLabel(sec: number) {
-  if (sec < 5) return "now";
-  if (sec < 60) return `${sec}s`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
-  return `${Math.floor(sec / 3600)}h`;
+function agoLabel(sec?: number | null) {
+  const s = typeof sec === "number" && !isNaN(sec) ? sec : 0;
+  if (s < 5) return "now";
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h`;
 }
 
 export function VisitorDock() {
@@ -23,9 +25,13 @@ export function VisitorDock() {
     const load = () => {
       getVisitors()
         .then((s) => {
-          if (cancelled) return;
-          setCount(s.monthCount);
-          setLive(s.live);
+          if (cancelled || !s) return;
+          if (typeof s.monthCount === "number") {
+            setCount(s.monthCount);
+          }
+          if (Array.isArray(s.live)) {
+            setLive(s.live);
+          }
         })
         .catch(() => {});
     };

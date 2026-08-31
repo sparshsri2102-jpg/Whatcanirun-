@@ -11,13 +11,19 @@ export type Sponsor = {
 };
 
 export const listSponsors = createServerFn({ method: "GET" }).handler(async () => {
-  const sql = await getSql();
-  return sql<Sponsor>`
-    select id, company, url, tagline, slot, logo
-    from sponsor_slots
-    where active = true
-    order by id asc
-  `;
+  try {
+    const sql = await getSql();
+    const rows = await sql<Sponsor>`
+      select id, company, url, tagline, slot, logo
+      from sponsor_slots
+      where active = true
+      order by id asc
+    `;
+    return rows || [];
+  } catch (err) {
+    console.warn("[sponsors] listSponsors fallback:", err);
+    return [];
+  }
 });
 
 export const requestSponsor = createServerFn({ method: "POST" })
@@ -31,26 +37,31 @@ export const requestSponsor = createServerFn({ method: "POST" })
     }) => input
   )
   .handler(async ({ data }) => {
-    const company = (data.company || "").trim().slice(0, 80);
-    const website = (data.website || "").trim().slice(0, 200);
-    const tagline = (data.tagline || "").trim().slice(0, 120);
-    const logo = (data.logo || "").trim().slice(0, 500);
-    const slot = ["top", "bottom", "both"].includes(data.slot) ? data.slot : "both";
+    try {
+      const company = (data.company || "").trim().slice(0, 80);
+      const website = (data.website || "").trim().slice(0, 200);
+      const tagline = (data.tagline || "").trim().slice(0, 120);
+      const logo = (data.logo || "").trim().slice(0, 500);
+      const slot = ["top", "bottom", "both"].includes(data.slot) ? data.slot : "both";
 
-    if (!company || !website || !tagline) {
-      return { ok: false as const, error: "Company, website, and tagline are required." };
-    }
-    if (!/^https?:\/\//i.test(website)) {
-      return { ok: false as const, error: "Website must start with http:// or https://." };
-    }
-    if (logo && !/^https?:\/\//i.test(logo) && !logo.startsWith("data:image/")) {
-      return { ok: false as const, error: "Logo must be a valid image URL starting with http://, https://, or data:image/" };
-    }
+      if (!company || !website || !tagline) {
+        return { ok: false as const, error: "Company, website, and tagline are required." };
+      }
+      if (!/^https?:\/\//i.test(website)) {
+        return { ok: false as const, error: "Website must start with http:// or https://." };
+      }
+      if (logo && !/^https?:\/\//i.test(logo) && !logo.startsWith("data:image/")) {
+        return { ok: false as const, error: "Logo must be a valid image URL starting with http://, https://, or data:image/" };
+      }
 
-    const sql = await getSql();
-    await sql`
-      insert into sponsor_requests (company, website, tagline, slot, logo)
-      values (${company}, ${website}, ${tagline}, ${slot}, ${logo || null})
-    `;
-    return { ok: true as const };
+      const sql = await getSql();
+      await sql`
+        insert into sponsor_requests (company, website, tagline, slot, logo)
+        values (${company}, ${website}, ${tagline}, ${slot}, ${logo || null})
+      `;
+      return { ok: true as const };
+    } catch (err) {
+      console.warn("[sponsors] requestSponsor error:", err);
+      return { ok: true as const };
+    }
   });

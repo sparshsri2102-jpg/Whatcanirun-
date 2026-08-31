@@ -19,7 +19,7 @@ export async function grokJson<T>(args: {
   const gemini = getGeminiClient();
   if (gemini) {
     try {
-      const contents: Array<unknown> = [];
+      const contents: Array<{ text?: string; inlineData?: { mimeType: string; data: string } } | string> = [];
       if (args.imageDataUrl) {
         const match = args.imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
         if (match) {
@@ -35,7 +35,7 @@ export async function grokJson<T>(args: {
 
       const response = await gemini.models.generateContent({
         model: "gemini-2.5-flash",
-        contents,
+        contents: contents as never,
         config: {
           systemInstruction:
             "You extract structured data. Reply with a single JSON object. No markdown, no commentary.",

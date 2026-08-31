@@ -15,8 +15,9 @@ export async function detectSystemHardware(): Promise<{
 
   // 1. WebGPU detection (modern browsers)
   try {
-    if ("gpu" in navigator && typeof navigator.gpu?.requestAdapter === "function") {
-      const adapter = await navigator.gpu.requestAdapter();
+    const maybeGpu = (navigator as unknown as { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+    if (maybeGpu && typeof maybeGpu.requestAdapter === "function") {
+      const adapter = await maybeGpu.requestAdapter();
       if (adapter) {
         // adapter.info may be available or requestAdapterInfo
         const info = (adapter as { info?: { architecture?: string; vendor?: string; description?: string; device?: string } }).info;

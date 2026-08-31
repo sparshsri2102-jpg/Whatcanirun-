@@ -310,8 +310,8 @@ function SharePage() {
     try {
       canvas.toBlob(async (blob) => {
         if (!blob) return;
-        // @ts-expect-error ClipboardItem is available in modern browsers
-        const item = new ClipboardItem({ "image/png": blob });
+        // ClipboardItem is available in modern browsers
+        const item = new (window as unknown as { ClipboardItem: new (d: Record<string, Blob>) => ClipboardItem }).ClipboardItem({ "image/png": blob });
         await navigator.clipboard.write([item]);
         setCopiedType("image");
         setTimeout(() => setCopiedType(null), 2000);

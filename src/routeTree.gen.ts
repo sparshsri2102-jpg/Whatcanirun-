@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DropsRouteImport } from './routes/drops'
 import { Route as ModelsRouteImport } from './routes/models'
+import { Route as ShareRouteImport } from './routes/share'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SponsorRouteImport } from './routes/sponsor'
 
@@ -30,6 +31,11 @@ const ModelsRoute = ModelsRouteImport.update({
   path: '/models',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShareRoute = ShareRouteImport.update({
+  id: '/share',
+  path: '/share',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SkillsRoute = SkillsRouteImport.update({
   id: '/skills',
   path: '/skills',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/drops': typeof DropsRoute
   '/models': typeof ModelsRoute
+  '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/drops': typeof DropsRoute
   '/models': typeof ModelsRoute
+  '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
 }
@@ -60,21 +68,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/drops': typeof DropsRoute
   '/models': typeof ModelsRoute
+  '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/drops' | '/models' | '/skills' | '/sponsor'
+  fullPaths: '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/drops' | '/models' | '/skills' | '/sponsor'
-  id: '__root__' | '/' | '/drops' | '/models' | '/skills' | '/sponsor'
+  to: '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
+  id:
+    '__root__' | '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DropsRoute: typeof DropsRoute
   ModelsRoute: typeof ModelsRoute
+  ShareRoute: typeof ShareRoute
   SkillsRoute: typeof SkillsRoute
   SponsorRoute: typeof SponsorRoute
 }
@@ -102,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModelsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/share': {
+      id: '/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof ShareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/skills': {
       id: '/skills'
       path: '/skills'
@@ -123,6 +141,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DropsRoute: DropsRoute,
   ModelsRoute: ModelsRoute,
+  ShareRoute: ShareRoute,
   SkillsRoute: SkillsRoute,
   SponsorRoute: SponsorRoute,
 }

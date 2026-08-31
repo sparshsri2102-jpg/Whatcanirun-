@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import type { MatchResult, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
 import { cn } from "@/lib/utils";
 
@@ -289,12 +288,12 @@ export function MatchResults({
                 <span className="font-mono text-fg">{ctx}k</span>
               </div>
             ) : null}
-            <Link
-              to={`/share?${shareParams.toString()}`}
+            <a
+              href={`/share?${shareParams.toString()}`}
               className="border border-fg bg-fg px-2.5 py-1 text-2xs font-mono text-bg uppercase tracking-wider hover:opacity-90 transition-opacity"
             >
               ⚡ export & share card
-            </Link>
+            </a>
           </div>
         </div>
         <div className="mt-3 grid gap-3 text-sm sm:grid-cols-4">

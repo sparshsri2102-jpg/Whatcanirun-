@@ -17,7 +17,7 @@ export const SKILLS: Skill[] = [
     name: "CMO / Growth Operator",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "C-level advisory pack: marketing strategy, brand positioning, funnel optimization, launch campaigns, viral hooks, and SEO playbooks.",
     tags: ["cmo", "marketing", "growth", "brand", "copy", "campaigns", "seo", "positioning", "gtm", "funnel"],
@@ -29,7 +29,7 @@ export const SKILLS: Skill[] = [
     name: "CFO / Finance & Valuation Ops",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "Financial modeling, SaaS unit economics (CAC/LTV/Payback), runway projections, board deck summaries, cap table planning, and pricing models.",
     tags: ["cfo", "finance", "runway", "pricing", "valuation", "economics", "accounting", "burn", "budget", "money"],
@@ -41,7 +41,7 @@ export const SKILLS: Skill[] = [
     name: "General Counsel & Compliance",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "Contract redlines, SaaS terms of service, open-source license audit, privacy checklists (GDPR/CCPA), and vendor agreement review.",
     tags: ["legal", "contracts", "license", "privacy", "counsel", "lawyer", "gdpr", "tos", "compliance", "nda"],
@@ -53,7 +53,7 @@ export const SKILLS: Skill[] = [
     name: "Head of Talent & Recruiting",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "Job description architecture, candidate scorecards, technical interview question rubrics, outbound candidate outreach, and debrief frameworks.",
     tags: ["hiring", "recruiter", "interview", "hr", "talent", "headcount", "sourcing", "jobs"],
@@ -67,7 +67,7 @@ export const SKILLS: Skill[] = [
     name: "Superpowers: Staff Engineer & TDD",
     repo: "obra/superpowers",
     url: "https://github.com/obra/superpowers",
-    stars: 6400,
+    stars: 279000,
     description:
       "Rigorous test-driven development (TDD), multi-file refactoring, systemic debugging, and architecture design that prevents agent slop.",
     tags: ["engineering", "tdd", "debug", "refactor", "cto", "testing", "architecture", "coder", "clean-code", "python", "typescript"],
@@ -79,7 +79,7 @@ export const SKILLS: Skill[] = [
     name: "Backend & API Architect",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "REST & gRPC API design, microservice boundary modeling, idempotent webhooks, caching strategies (Redis), and distributed transactions.",
     tags: ["backend", "api", "rest", "grpc", "architecture", "redis", "database", "node", "go", "python", "microservices"],
@@ -91,7 +91,7 @@ export const SKILLS: Skill[] = [
     name: "Staff Code Reviewer & PR Auditor",
     repo: "obra/superpowers",
     url: "https://github.com/obra/superpowers",
-    stars: 6400,
+    stars: 279000,
     description:
       "Deep PR review for edge cases, performance bottlenecks, race conditions, type safety, memory leaks, and idiomatic conventions.",
     tags: ["code-review", "pr", "review", "audit", "linter", "edge-cases", "quality", "clean-code", "refactoring"],
@@ -103,7 +103,7 @@ export const SKILLS: Skill[] = [
     name: "Rust & Systems Programmer",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Memory-safe systems programming, async Tokio runtime architectures, zero-copy parsing, SIMD optimizations, and FFI bindings.",
     tags: ["rust", "systems", "low-level", "tokio", "concurrency", "performance", "memory", "c++"],
@@ -115,7 +115,7 @@ export const SKILLS: Skill[] = [
     name: "Python Master & Data Science",
     repo: "travisvn/awesome-claude-skills",
     url: "https://github.com/travisvn/awesome-claude-skills",
-    stars: 2800,
+    stars: 14800,
     description:
       "Modern Python 3.12+ patterns (Pydantic v2, FastAPI, typing, asyncio), PyTorch pipeline scaffolding, and scientific computing.",
     tags: ["python", "fastapi", "pydantic", "asyncio", "numpy", "pandas", "data-science", "scripting"],
@@ -129,7 +129,7 @@ export const SKILLS: Skill[] = [
     name: "AppSec Reviewer & Threat Modeler",
     repo: "obra/superpowers",
     url: "https://github.com/obra/superpowers",
-    stars: 6400,
+    stars: 279000,
     description:
       "STRIDE threat modeling, OWASP Top 10 audit, SQLi/XSS/CSRF penetration testing, dependency CVE scanning, and cryptographic sanity checks.",
     tags: ["security", "owasp", "audit", "appsec", "threat-model", "pentest", "vulnerability", "cve", "auth", "exploit", "hack"],
@@ -141,7 +141,7 @@ export const SKILLS: Skill[] = [
     name: "Smart Contract & EVM Auditor",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Reentrancy attacks, flash loan attack vectors, access control audits, gas optimization, and formal verification for Solidity smart contracts.",
     tags: ["solidity", "security", "web3", "evm", "smart-contracts", "crypto", "audit"],
@@ -155,7 +155,7 @@ export const SKILLS: Skill[] = [
     name: "Staff SRE & Incident Commander",
     repo: "travisvn/awesome-claude-skills",
     url: "https://github.com/travisvn/awesome-claude-skills",
-    stars: 2800,
+    stars: 14800,
     description:
       "Incident response runbooks, post-mortem generator, Kubernetes pod crash triage, SLI/SLO definitions, and Prometheus/Grafana alerts.",
     tags: ["sre", "devops", "k8s", "kubernetes", "incident", "oncall", "monitoring", "prometheus", "grafana", "outage", "production"],
@@ -167,7 +167,7 @@ export const SKILLS: Skill[] = [
     name: "Docker & GitHub Actions CI/CD Specialist",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Multi-stage Dockerfiles, caching strategies, GitHub Actions matrix builds, automated zero-downtime deployments, and Terraform IaC.",
     tags: ["docker", "ci", "cd", "github-actions", "devops", "terraform", "iac", "containers", "deployment", "linux"],
@@ -181,7 +181,7 @@ export const SKILLS: Skill[] = [
     name: "Frontend UI Taste & Tailwind Craft",
     repo: "anthropics/skills",
     url: "https://github.com/anthropics/skills",
-    stars: 8900,
+    stars: 173000,
     description:
       "Anti-generic layout principles, typographic contrast scales, deliberate micro-interactions, responsive Tailwind CSS, and WCAG AA accessibility.",
     tags: ["design", "frontend", "ui", "ux", "css", "tailwind", "react", "layout", "typography", "components", "interface"],
@@ -193,7 +193,7 @@ export const SKILLS: Skill[] = [
     name: "Brand Identity & Visual Voice",
     repo: "anthropics/skills",
     url: "https://github.com/anthropics/skills",
-    stars: 8900,
+    stars: 173000,
     description:
       "Visual design systems, naming guidelines, typography pairings, color palette theory, and high-conversion landing page design critique.",
     tags: ["brand", "design", "identity", "voice", "landing-page", "colors", "creative", "logo"],
@@ -207,7 +207,7 @@ export const SKILLS: Skill[] = [
     name: "Data Engineer & SQL/dbt Modeler",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Postgres index tuning, dbt dimensional modeling, ClickHouse analytics queries, ETL streaming pipelines, and warehouse partitioning.",
     tags: ["data", "sql", "dbt", "etl", "postgres", "database", "clickhouse", "analytics", "pipeline", "query"],
@@ -219,7 +219,7 @@ export const SKILLS: Skill[] = [
     name: "RAG & Vector Search Architect",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Chunking strategies, hybrid BM25 + dense vector search, reranking pipelines, evaluation rubrics (Ragas), and local embedding setups.",
     tags: ["rag", "embeddings", "vector", "ai", "search", "qdrant", "pgvector", "retrieval", "llm", "knowledge-base"],
@@ -231,7 +231,7 @@ export const SKILLS: Skill[] = [
     name: "System Prompt & Agent Metaprompting",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Few-shot reasoning chains, XML structured formatting, anti-jailbreak constraints, tool-calling validation schemas, and prompt eval suites.",
     tags: ["prompt", "prompt-engineering", "metaprompt", "agent", "system-prompt", "xml", "few-shot", "reasoning"],
@@ -245,7 +245,7 @@ export const SKILLS: Skill[] = [
     name: "SEO + Viral Content Engine",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "High-intent keyword research, search intent mapping, technical SEO audits, programmatic content generation, and organic distribution.",
     tags: ["seo", "content", "writing", "blog", "organic", "keywords", "traffic", "copywriting"],
@@ -257,7 +257,7 @@ export const SKILLS: Skill[] = [
     name: "Sales & Cold Outreach Strategist",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "B2B cold email sequences, personalized LinkedIn outreach, objection handling matrices, discovery call scripts, and demo battlecards.",
     tags: ["sales", "ae", "outbound", "cold-email", "gtm", "email", "pipeline", "deals", "prospecting"],
@@ -269,7 +269,7 @@ export const SKILLS: Skill[] = [
     name: "Staff Technical Writer & API Docs",
     repo: "anthropics/skills",
     url: "https://github.com/anthropics/skills",
-    stars: 8900,
+    stars: 173000,
     description:
       "Stripe-quality API documentation, comprehensive developer guides, architectural decision records (ADRs), and clear changelogs.",
     tags: ["docs", "writing", "readme", "api", "technical-writing", "guides", "documentation", "developer-docs"],
@@ -283,7 +283,7 @@ export const SKILLS: Skill[] = [
     name: "Product Manager & PRD Author",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "Detailed Product Requirement Documents (PRDs), user personas, acceptance criteria, ICE/RICE prioritization, and sprint roadmaps.",
     tags: ["pm", "product", "prd", "specs", "roadmap", "user-stories", "features", "prioritization", "backlog"],
@@ -295,7 +295,7 @@ export const SKILLS: Skill[] = [
     name: "QA Lead & End-to-End Playwright Tester",
     repo: "obra/superpowers",
     url: "https://github.com/obra/superpowers",
-    stars: 6400,
+    stars: 279000,
     description:
       "Automated Playwright test suites, regression checklists, edge-case coverage maps, visual regression testing, and CI smoke passes.",
     tags: ["qa", "testing", "playwright", "regression", "e2e", "test-plan", "automation", "smoke-test"],
@@ -307,7 +307,7 @@ export const SKILLS: Skill[] = [
     name: "Customer Success & Support Lead",
     repo: "alirezarezvani/claude-skills",
     url: "https://github.com/alirezarezvani/claude-skills",
-    stars: 5200,
+    stars: 25200,
     description:
       "Customer onboarding playbooks, churn risk alerts, empathetic support macros, QBR presentation decks, and escalation workflows.",
     tags: ["cs", "success", "onboarding", "support", "customer-service", "churn", "tickets", "retention"],
@@ -319,7 +319,7 @@ export const SKILLS: Skill[] = [
     name: "Anthropic Document & Office Suite",
     repo: "anthropics/skills",
     url: "https://github.com/anthropics/skills",
-    stars: 8900,
+    stars: 173000,
     description:
       "Official reference SKILL.md specs for generating, editing, and extracting insights from PDF, DOCX, XLSX spreadsheets, and PPTX presentations.",
     tags: ["docs", "pdf", "xlsx", "pptx", "office", "spreadsheets", "presentations", "reports"],
@@ -331,7 +331,7 @@ export const SKILLS: Skill[] = [
     name: "Awesome Agent Skills Directory",
     repo: "VoltAgent/awesome-agent-skills",
     url: "https://github.com/VoltAgent/awesome-agent-skills",
-    stars: 4100,
+    stars: 33300,
     description:
       "Curated index of 1000+ agent skills for Claude Code, Codex, Cursor, Gemini CLI, Windsurf, and custom autonomous agents.",
     tags: ["index", "catalog", "claude", "cursor", "codex", "all-skills", "directory", "ecosystem"],

@@ -52,15 +52,20 @@ function SkillsPage() {
   const [category, setCategory] = useState("all");
   const [busy, setBusy] = useState(false);
   const [serverHits, setServerHits] = useState<SkillHit[] | null>(null);
+  const [liveStarsMap, setLiveStarsMap] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Compute immediate local matches for instant zero-lag feedback
   const localHits = useMemo(() => {
-    const hits = searchLocalSkills(q).map((s) => ({ ...s, origin: "catalog" as const }));
+    const hits = searchLocalSkills(q).map((s) => ({
+      ...s,
+      stars: liveStarsMap[s.repo] ?? s.stars,
+      origin: "catalog" as const,
+    }));
     if (category === "all") return hits;
     return hits.filter((h) => h.category === category);
-  }, [q, category]);
+  }, [q, category, liveStarsMap]);
 
   async function runServerSearch(queryText: string) {
     setBusy(true);
@@ -68,6 +73,12 @@ function SkillsPage() {
     try {
       const rows = await searchSkills({ data: { query: queryText } });
       setServerHits(rows);
+      // Cache returned live repo stars
+      const newStars: Record<string, number> = {};
+      rows.forEach((r) => {
+        newStars[r.repo] = r.stars;
+      });
+      setLiveStarsMap((prev) => ({ ...prev, ...newStars }));
     } catch {
       setError("Live search timed out. Displaying curated skills instantly.");
     } finally {

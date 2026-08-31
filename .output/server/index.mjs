@@ -1,10 +1,214 @@
 globalThis.__nitro_main__ = import.meta.url;
-import { i as toEventHandler, n as HTTPError, r as defineLazyEventHandler, s as NodeResponse, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { a as toEventHandler, c as NodeResponse, i as defineLazyEventHandler, l as serve, n as HTTPError, r as defineHandler, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
+import { i as withoutTrailingSlash, n as joinURL, r as withLeadingSlash, t as decodePath } from "./_libs/ufo.mjs";
+import { existsSync, promises, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
 //#region node_modules/nitro/dist/runtime/internal/route-rules.mjs
 var headers = ((m) => function headersRouteRule(event) {
 	for (const [key, value] of Object.entries(m.options || {})) event.res.headers.set(key, value);
+});
+//#endregion
+//#region #nitro/virtual/public-assets-data
+var public_assets_data_default = {
+	"/favicon.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"13f-GSVbmQCi5OPHE+Nst0lgw7r+XKA\"",
+		"mtime": "2026-08-31T03:35:35.663Z",
+		"size": 319,
+		"path": "../public/favicon.svg"
+	},
+	"/og.jpg": {
+		"type": "image/jpeg",
+		"etag": "\"a4d2-mUkn2WRiKXcazdWkTTPgWNaUmHA\"",
+		"mtime": "2026-08-31T03:35:35.663Z",
+		"size": 42194,
+		"path": "../public/og.jpg"
+	},
+	"/__grok/icon-180.png": {
+		"type": "image/png",
+		"etag": "\"834-Xk8vfS0DTFn7ggtkfEduWTcNWGE\"",
+		"mtime": "2026-08-31T03:35:35.663Z",
+		"size": 2100,
+		"path": "../public/__grok/icon-180.png"
+	},
+	"/assets/catalog-CdPkdj69.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"58c3-Y5XtquKRNcSnPfvfU2vma0g6Zbk\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 22723,
+		"path": "../public/assets/catalog-CdPkdj69.js"
+	},
+	"/assets/drops-3Bxtr9_l.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"2967-0fdgDTNNMuWlfmaZ33loch6dgM8\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 10599,
+		"path": "../public/assets/drops-3Bxtr9_l.js"
+	},
+	"/assets/index-vA7f6GQQ.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"63c1d-eyxT/yFoyZBgdiT8wLvM9opxE7A\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 408605,
+		"path": "../public/assets/index-vA7f6GQQ.js"
+	},
+	"/assets/models-BLwPcHOL.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"1bb0-ngrAV88Rzoe6UxMT1FPYpxoIxGs\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 7088,
+		"path": "../public/assets/models-BLwPcHOL.js"
+	},
+	"/assets/routes-yRGMGdEl.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"6dbf-qTibHPvEVvcEtQCV0JODmGiuygA\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 28095,
+		"path": "../public/assets/routes-yRGMGdEl.js"
+	},
+	"/assets/share-CE6TVN37.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"4a19-mw3M40JOSZRk9bVsNyF88Rpkwyw\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 18969,
+		"path": "../public/assets/share-CE6TVN37.js"
+	},
+	"/assets/skills-DnYoNsDY.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"5e0c-ThrliqVSd+jnNARXexB64k2pHQY\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 24076,
+		"path": "../public/assets/skills-DnYoNsDY.js"
+	},
+	"/assets/styles-SoWhC-Kq.css": {
+		"type": "text/css; charset=utf-8",
+		"etag": "\"87e0-Q1aJJX24bO8JID8cel3QPz6G+bA\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 34784,
+		"path": "../public/assets/styles-SoWhC-Kq.css"
+	},
+	"/assets/utils-Dk_44zMo.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"6a77-huRZku0xw3taBmoFyibw55TbbUY\"",
+		"mtime": "2026-08-31T03:35:34.440Z",
+		"size": 27255,
+		"path": "../public/assets/utils-Dk_44zMo.js"
+	},
+	"/__grok/install/styles.css": {
+		"type": "text/css; charset=utf-8",
+		"etag": "\"1a3d-VUsWOMAheo1/P30EqU5qaIkyvIQ\"",
+		"mtime": "2026-08-31T03:35:35.663Z",
+		"size": 6717,
+		"path": "../public/__grok/install/styles.css"
+	},
+	"/__grok/install/assets/homescreen/glass-puzzle.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"713-AP2wG8KChAGjse1Fn+f/+vDN+sQ\"",
+		"mtime": "2026-08-31T03:35:35.663Z",
+		"size": 1811,
+		"path": "../public/__grok/install/assets/homescreen/glass-puzzle.svg"
+	},
+	"/__grok/install/assets/homescreen/glass-share.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"954-jb3ATcKjqgMOYrA/4w1v21j0Jvg\"",
+		"mtime": "2026-08-31T03:35:35.664Z",
+		"size": 2388,
+		"path": "../public/__grok/install/assets/homescreen/glass-share.svg"
+	},
+	"/__grok/install/assets/homescreen/logo-grok.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"423-5mXO+yh9KW40jM3to5JlWPhxNK8\"",
+		"mtime": "2026-08-31T03:35:35.664Z",
+		"size": 1059,
+		"path": "../public/__grok/install/assets/homescreen/logo-grok.svg"
+	},
+	"/__grok/install/assets/homescreen/ob-ipad.png": {
+		"type": "image/png",
+		"etag": "\"18dd3-wlRwrpmBImStuiu+4poVz7ANin4\"",
+		"mtime": "2026-08-31T03:35:35.664Z",
+		"size": 101843,
+		"path": "../public/__grok/install/assets/homescreen/ob-ipad.png"
+	},
+	"/__grok/install/assets/homescreen/ob-phone.png": {
+		"type": "image/png",
+		"etag": "\"194bc-oZradWHIHO68q2glHU0Gk5ttpWA\"",
+		"mtime": "2026-08-31T03:35:35.664Z",
+		"size": 103612,
+		"path": "../public/__grok/install/assets/homescreen/ob-phone.png"
+	},
+	"/__grok/install/assets/homescreen/plus.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"961-sSBPunx/13vbMNAlPxb7UeO3l3A\"",
+		"mtime": "2026-08-31T03:35:35.664Z",
+		"size": 2401,
+		"path": "../public/__grok/install/assets/homescreen/plus.svg"
+	}
+};
+//#endregion
+//#region #nitro/virtual/public-assets-node
+function readAsset(id) {
+	const serverDir = dirname(fileURLToPath(globalThis.__nitro_main__));
+	return promises.readFile(resolve(serverDir, public_assets_data_default[id].path));
+}
+//#endregion
+//#region #nitro/virtual/public-assets
+var publicAssetBases = {};
+function isPublicAssetURL(id = "") {
+	if (public_assets_data_default[id]) return true;
+	for (const base in publicAssetBases) if (id.startsWith(base)) return true;
+	return false;
+}
+function getAsset(id) {
+	return public_assets_data_default[id];
+}
+//#endregion
+//#region node_modules/nitro/dist/runtime/internal/static.mjs
+var METHODS = /* @__PURE__ */ new Set(["HEAD", "GET"]);
+var EncodingMap = {
+	gzip: ".gz",
+	br: ".br",
+	zstd: ".zst"
+};
+var static_default = defineHandler((event) => {
+	if (event.req.method && !METHODS.has(event.req.method)) return;
+	let id = decodePath(withLeadingSlash(withoutTrailingSlash(event.url.pathname)));
+	let asset;
+	const encodings = [...(event.req.headers.get("accept-encoding") || "").split(",").map((e) => EncodingMap[e.trim()]).filter(Boolean).sort(), ""];
+	for (const encoding of encodings) for (const _id of [id + encoding, joinURL(id, "index.html" + encoding)]) {
+		const _asset = getAsset(_id);
+		if (_asset) {
+			asset = _asset;
+			id = _id;
+			break;
+		}
+	}
+	if (!asset) {
+		if (isPublicAssetURL(id)) {
+			event.res.headers.delete("Cache-Control");
+			throw new HTTPError({ status: 404 });
+		}
+		return;
+	}
+	if (encodings.length > 1) event.res.headers.append("Vary", "Accept-Encoding");
+	if (event.req.headers.get("if-none-match") === asset.etag) {
+		event.res.status = 304;
+		event.res.statusText = "Not Modified";
+		return "";
+	}
+	const ifModifiedSinceH = event.req.headers.get("if-modified-since");
+	const mtimeDate = new Date(asset.mtime);
+	if (ifModifiedSinceH && asset.mtime && new Date(ifModifiedSinceH) >= mtimeDate) {
+		event.res.status = 304;
+		event.res.statusText = "Not Modified";
+		return "";
+	}
+	if (asset.type) event.res.headers.set("Content-Type", asset.type);
+	if (asset.etag && !event.res.headers.has("ETag")) event.res.headers.set("ETag", asset.etag);
+	if (asset.mtime && !event.res.headers.has("Last-Modified")) event.res.headers.set("Last-Modified", mtimeDate.toUTCString());
+	if (asset.encoding && !event.res.headers.has("Content-Encoding")) event.res.headers.set("Content-Encoding", asset.encoding);
+	if (asset.size > 0 && !event.res.headers.has("Content-Length")) event.res.headers.set("Content-Length", asset.size.toString());
+	return readAsset(id);
 });
 //#endregion
 //#region scripts/install-page.html?raw
@@ -472,7 +676,7 @@ var findRoute = /* @__PURE__ */ (() => {
 		};
 	});
 })();
-var globalMiddleware = [toEventHandler(grokPwaMiddleware)].filter(Boolean);
+var globalMiddleware = [toEventHandler(static_default), toEventHandler(grokPwaMiddleware)].filter(Boolean);
 //#endregion
 //#region node_modules/nitro/dist/runtime/internal/error/prod.mjs
 var errorHandler = (error, event) => {
@@ -613,42 +817,37 @@ function getRouteRules(method, pathname) {
 	};
 }
 //#endregion
-//#region node_modules/nitro/dist/presets/vercel/runtime/isr.mjs
-var ISR_URL_PARAM = "__isr_route";
-function isrRouteRewrite(reqUrl, xNowRouteMatches) {
-	if (xNowRouteMatches) {
-		const isrURL = new URLSearchParams(xNowRouteMatches).get(ISR_URL_PARAM);
-		if (isrURL) return [decodeURIComponent(isrURL), ""];
-	} else {
-		const queryIndex = reqUrl.indexOf("?");
-		if (queryIndex !== -1) {
-			const params = new URLSearchParams(reqUrl.slice(queryIndex + 1));
-			const isrURL = params.get(ISR_URL_PARAM);
-			if (isrURL) {
-				params.delete(ISR_URL_PARAM);
-				return [decodeURIComponent(isrURL), params.toString()];
-			}
-		}
-	}
+//#region node_modules/nitro/dist/runtime/internal/error/hooks.mjs
+function _captureError(error, type) {
+	console.error(`[${type}]`, error);
+	useNitroApp().captureError?.(error, { tags: [type] });
+}
+function trapUnhandledErrors() {
+	process.on("unhandledRejection", (error) => _captureError(error, "unhandledRejection"));
+	process.on("uncaughtException", (error) => _captureError(error, "uncaughtException"));
 }
 //#endregion
-//#region node_modules/nitro/dist/presets/vercel/runtime/vercel.web.mjs
-var nitroApp = useNitroApp();
-var vercel_web_default = { async fetch(req, context) {
-	const isrURL = isrRouteRewrite(req.url, req.headers.get("x-now-route-matches"));
-	if (isrURL) {
-		const { routeRules } = getRouteRules("", isrURL[0]);
-		if (routeRules?.isr) req = new Request(new URL(isrURL[0] + (isrURL[1] ? `?${isrURL[1]}` : ""), req.url).href, req);
-	}
-	req.runtime ??= { name: "vercel" };
-	req.runtime.vercel = { context };
-	let ip;
-	Object.defineProperty(req, "ip", { get() {
-		const h = req.headers.get("x-forwarded-for");
-		return ip ??= h?.split(",").shift()?.trim();
-	} });
-	req.waitUntil = context?.waitUntil;
-	return nitroApp.fetch(req);
-} };
+//#region #nitro/virtual/tracing
+var tracingSrvxPlugins = [];
 //#endregion
-export { vercel_web_default as default };
+//#region node_modules/nitro/dist/presets/node/runtime/node-server.mjs
+var _parsedPort = Number.parseInt(process.env.NITRO_PORT ?? process.env.PORT ?? "");
+var port = Number.isNaN(_parsedPort) ? 3e3 : _parsedPort;
+var host = process.env.NITRO_HOST || process.env.HOST;
+var cert = process.env.NITRO_SSL_CERT;
+var key = process.env.NITRO_SSL_KEY;
+var nitroApp = useNitroApp();
+serve({
+	port,
+	hostname: host,
+	tls: cert && key ? {
+		cert,
+		key
+	} : void 0,
+	fetch: nitroApp.fetch,
+	plugins: [...tracingSrvxPlugins]
+});
+trapUnhandledErrors();
+var node_server_default = {};
+//#endregion
+export { node_server_default as default };

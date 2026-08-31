@@ -3,6 +3,7 @@ import { PRESETS } from "@/lib/models/catalog";
 import { matchHardware } from "@/lib/server/match";
 import type { MatchResult, ModelTask, Specs } from "@/lib/models/types";
 import { MatchResults } from "./match-results";
+import { TerminalProcessing } from "./terminal-processing";
 import { detectSystemHardware } from "@/lib/models/detect-hardware";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ export function SpecBench() {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [shotName, setShotName] = useState<string | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
+  const [activeSummary, setActiveSummary] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -108,16 +110,29 @@ export function SpecBench() {
     setBusy(true);
     setError(null);
     const activeCtx = opts?.ctx ?? contextK;
+    const summary = opts?.preset?.gpu 
+      ? `${opts.preset.gpu} (${opts.preset.vramGb} GB VRAM / ${opts.preset.ramGb} GB RAM)` 
+      : shotName 
+        ? `Screenshot: ${shotName}` 
+        : text.trim() 
+          ? text.trim().slice(0, 80) 
+          : "System hardware telemetry buffer";
+    setActiveSummary(summary);
+
     try {
-      const res = await matchHardware({
-        data: {
-          text: opts?.preset ? undefined : text,
-          imageDataUrl: opts?.image ?? shotUrl ?? undefined,
-          prefer: task === "any" ? undefined : task,
-          presetSpecs: opts?.preset,
-          contextK: activeCtx,
-        },
-      });
+      const [res] = await Promise.all([
+        matchHardware({
+          data: {
+            text: opts?.preset ? undefined : text,
+            imageDataUrl: opts?.image ?? shotUrl ?? undefined,
+            prefer: task === "any" ? undefined : task,
+            presetSpecs: opts?.preset,
+            contextK: activeCtx,
+          },
+        }),
+        new Promise((resolve) => setTimeout(resolve, 600)),
+      ]);
+
       if ("error" in res) {
         setError(res.error);
         setResult(null);
@@ -433,7 +448,9 @@ export function SpecBench() {
 
       {error ? <p className="mt-4 text-sm text-fg">{error}</p> : null}
 
-      {result ? (
+      {busy ? (
+        <TerminalProcessing specsSummary={activeSummary} contextK={contextK} />
+      ) : result ? (
         <div className="enter-up mt-10" ref={resultRef}>
           <MatchResults
             result={result}

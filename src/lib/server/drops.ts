@@ -58,11 +58,22 @@ async function fetchHf(url: string): Promise<HfModel[]> {
   return Array.isArray(json) ? json : [];
 }
 
+function ghHeaders(): Record<string, string> {
+  const h: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "canirunthis/1.0",
+  };
+  const tok = typeof process !== "undefined" ? process.env.GITHUB_TOKEN : undefined;
+  if (tok && !tok.startsWith("your_")) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+
 async function fetchGithub(): Promise<DropItem[]> {
   const queries = [
     "gguf stars:>20",
     "llama.cpp stars:>50",
     "topic:gguf",
+    "open-weight stars:>10",
   ];
   const out: DropItem[] = [];
   const seen = new Set<string>();
@@ -70,12 +81,7 @@ async function fetchGithub(): Promise<DropItem[]> {
     const q = encodeURIComponent(raw);
     const res = await fetch(
       `https://api.github.com/search/repositories?q=${q}&sort=updated&order=desc&per_page=8`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          "User-Agent": "canirunthis/1.0",
-        },
-      },
+      { headers: ghHeaders() },
     );
     if (!res.ok) continue;
     const json = (await res.json()) as {

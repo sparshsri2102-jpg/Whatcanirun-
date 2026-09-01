@@ -15,6 +15,16 @@ type GhRepo = {
   stargazers_count: number;
 };
 
+function ghHeadersSkills(): Record<string, string> {
+  const h: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "whatcanirun-skills/1.0",
+  };
+  const tok = typeof process !== "undefined" ? process.env.GITHUB_TOKEN : undefined;
+  if (tok && !tok.startsWith("your_")) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+
 // In-memory cache for live GitHub repo stars with 1 hour TTL
 const starCache = new Map<string, { stars: number; at: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -29,10 +39,7 @@ async function fetchLiveRepoStars(repo: string, fallbackStars: number): Promise<
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2000);
     const res = await fetch(`https://api.github.com/repos/${repo}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "whatcanirun-skills/1.0",
-      },
+      headers: ghHeadersSkills(),
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -64,13 +71,7 @@ async function githubSearch(q: string): Promise<SkillHit[]> {
 
     const res = await fetch(
       `https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=8`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          "User-Agent": "whatcanirun-skills/1.0",
-        },
-        signal: controller.signal,
-      },
+      { headers: ghHeadersSkills(), signal: controller.signal },
     );
     clearTimeout(timeout);
 

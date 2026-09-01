@@ -1,10 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AsciiRadarMap } from "./ascii-radar-map";
 import { getVisitors, pingVisitor, type VisitorPing } from "@/lib/server/visitors";
 
 function fmtCount(n?: number | null) {
   const val = typeof n === "number" && !isNaN(n) ? n : 18420;
   return val.toLocaleString("en-US");
+}
+
+function AnimatedCount({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(value);
+  useEffect(() => {
+    if (prevRef.current === value) return;
+    const from = prevRef.current;
+    const to = value;
+    const diff = to - from;
+    const dur = 900;
+    const start = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(from + diff * eased));
+      if (p < 1) raf = requestAnimationFrame(step);
+      else prevRef.current = to;
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{fmtCount(display)}</>;
 }
 
 function agoLabel(sec?: number | null) {
@@ -66,22 +90,39 @@ export function VisitorDock() {
             Every blinking node represents an active hardware builder browsing the open-weight registry.
           </p>
           <div className="mt-5 flex items-baseline gap-3">
-            <span className="text-3xl tabular-nums tracking-tight">{fmtCount(count)}</span>
+            <span className="text-3xl tabular-nums tracking-tight">
+              <AnimatedCount value={count} />
+            </span>
             <span className="text-xs uppercase tracking-widest text-muted">visitors this month</span>
+            <span className="ml-1 inline-flex items-center gap-1.5 text-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 dot-live inline-block" />
+              <span className="text-emerald-400 uppercase tracking-widest">live</span>
+              <span className="tabular-nums text-muted">{live.length} active</span>
+            </span>
           </div>
           {you ? (
-            <div className="mt-3 text-xs text-muted flex items-center gap-2">
-              <span>you · {you.toLowerCase()}</span>
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="mt-3 inline-flex items-center gap-2 border border-emerald-900/50 bg-emerald-950/20 px-2 py-1 text-xs text-emerald-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              you · {you.toLowerCase()} · pinged {agoLabel(live.find(v => v.city.toLowerCase()===you.toLowerCase())?.agoSec ?? 0)} ago
             </div>
           ) : null}
-          <ul className="mt-5 space-y-1 text-xs text-muted">
+          <ul className="mt-5 space-y-0 text-xs text-muted border border-line">
+            <li className="flex justify-between bg-surface px-2 py-1 text-2xs uppercase tracking-widest text-dim">
+              <span>recent pings · timezone-derived</span>
+              <span>{live.length} nodes</span>
+            </li>
             {live.slice(0, 6).map((v) => (
-              <li key={v.id} className="flex justify-between gap-4 border-b border-line py-1">
-                <span className="text-fg">{v.city.toLowerCase()}</span>
-                <span className="tabular-nums text-dim">{agoLabel(v.agoSec)}</span>
+              <li key={v.id} className="flex justify-between gap-4 border-t border-line px-2 py-1">
+                <span className="text-fg flex items-center gap-1.5">
+                  <span className={`inline-block h-1 w-1 rounded-full ${v.agoSec < 20 ? 'bg-emerald-400 dot-live' : v.agoSec < 60 ? 'bg-amber-400' : 'bg-dim'}`} />
+                  {v.city.toLowerCase()}
+                </span>
+                <span className="tabular-nums text-dim">{agoLabel(v.agoSec)} · {v.lat > 0 ? `${v.lat.toFixed(0)}N` : `${Math.abs(v.lat).toFixed(0)}S`}</span>
               </li>
             ))}
+            {live.length === 0 ? (
+              <li className="px-2 py-3 text-center text-dim">listening for hardware builders…</li>
+            ) : null}
           </ul>
         </div>
 

@@ -69,6 +69,7 @@ function SponsorLogoImage({ logo, company }: { logo?: string | null; company: st
 
 export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
   const [sponsors, setSponsors] = useState<Sponsor[]>(FALLBACK);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     listSponsors()
@@ -83,16 +84,27 @@ export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
   const loop = [...items, ...items, ...items, ...items];
 
   return (
-    <div className="border-b border-line bg-surface text-2xs uppercase tracking-[0.18em] text-muted">
+    <div
+      className="group/ticker border-b border-line bg-surface text-2xs uppercase tracking-[0.18em] text-muted"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
       <div className="flex items-stretch">
         <Link
           to="/sponsor"
-          className="shrink-0 border-r border-line px-3 py-2 text-fg hover:bg-fg hover:text-bg transition-colors"
+          className="shrink-0 border-r border-line bg-surface px-3 py-2 text-fg hover:bg-fg hover:text-bg transition-colors font-medium"
         >
-          sponsored
+          <span className="hidden sm:inline">sponsored — advertise here</span>
+          <span className="sm:hidden">sponsored</span>
         </Link>
         <div className="relative min-w-0 flex-1 overflow-hidden">
-          <div className="marquee-track flex w-max items-center gap-10 py-2 pr-10">
+          {/* edge fades */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-surface to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-surface to-transparent" />
+          <div
+            className="marquee-track flex w-max items-center gap-10 py-2 pr-10"
+            style={{ animationPlayState: paused ? "paused" : "running" }}
+          >
             {loop.map((s, i) => (
               <a
                 key={`${s.id}-${i}`}
@@ -102,9 +114,10 @@ export function SponsorTicker({ position }: { position: "top" | "bottom" }) {
                 className="flex items-center gap-2 whitespace-nowrap hover:text-fg transition-colors"
               >
                 <SponsorLogoImage logo={s.logo} company={s.company} />
-                <span className="font-medium text-fg">{s.company}</span>
+                <span className="font-medium text-fg tracking-wide">{s.company}</span>
                 <span className="text-dim">·</span>
                 <span className="normal-case tracking-normal text-muted">{s.tagline}</span>
+                <span className="ml-1 text-[8px] text-dim opacity-60">◆</span>
               </a>
             ))}
           </div>

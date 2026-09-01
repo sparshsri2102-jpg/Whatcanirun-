@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
 @theme {
   --color-bg: #0a0a0a;
@@ -11,9 +12,13 @@
   --color-invert: #f0f0f0;
   --color-invert-fg: #0a0a0a;
   --color-danger: #c4c4c4;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
+  --color-primary: #CC8800;
 
-  --font-sans: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-display: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
 
   --radius-none: 0px;
   --radius-sm: 0px;
@@ -59,6 +64,7 @@
   h1,
   h2,
   h3 {
+    font-family: var(--font-sans);
     text-wrap: balance;
   }
 

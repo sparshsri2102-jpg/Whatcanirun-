@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MatchResult, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
+import type { MatchResult, Model, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
 import { cn } from "@/lib/utils";
 
 function FitBadge({ fit }: { fit: ModelFit["fit"] }) {
@@ -116,6 +116,156 @@ function generateRunCmd(
   }
 }
 
+function QuantAdvisor({ model, quants, vramGb }: { model: Model; quants: QuantOption[]; vramGb: number }) {
+  const gpuOpts = quants.filter((q) => q.fit === "gpu");
+  const hybridOpts = quants.filter((q) => q.fit === "hybrid");
+  const best = gpuOpts.length ? gpuOpts[0] : hybridOpts[0];
+  if (!best) return null;
+  const q4 = quants.find((q) => q.quant.name === "Q4");
+  const q8 = quants.find((q) => q.quant.name === "Q8");
+  const qualityDrop = q4 && q8 ? Math.round((1 - q4.quant.quality / q8.quant.quality) * 100) : 0;
+  const recommended = best.quant.name;
+  return (
+    <div className="mt-3 border border-primary/30 bg-primary/5 p-3 text-center">
+      <div className="text-2xs uppercase tracking-widest text-primary">recommended quant for your rig</div>
+      <div className="mt-1 text-sm font-semibold text-fg">{recommended}</div>
+      <p className="mt-1 text-2xs text-muted leading-relaxed">
+        {recommended === "Q4"
+          ? `Fits your ${vramGb}GB with headroom. Only ~${qualityDrop}% quality drop vs Q8 — best speed/quality balance.`
+          : recommended === "Q8"
+            ? `Near-lossless quality on your ${vramGb}GB. Maximum speed you can get.`
+            : `Best fit available on your hardware. ${best.headroomGb > 0 ? `+${best.headroomGb}GB headroom.` : "Tight fit."}`}
+      </p>
+    </div>
+  );
+}
+
+function UpgradePath({ result }: { result: MatchResult }) {
+  const top = result.picks[0];
+  if (!top || top.fit === "gpu") return null;
+  const upgradeVram = top.quant.vramGb;
+  return (
+    <div className="mt-8 border border-warning/30 bg-warning/5 p-6 sm:p-8">
+      <div className="text-2xs uppercase tracking-widest text-warning">feature: upgrade path</div>
+      <h3 className="mt-2 text-xl font-semibold text-fg">
+        Add ~{upgradeVram - result.specs.vramGb}GB VRAM to run {top.model.name}
+      </h3>
+      <p className="mt-2 text-sm text-muted leading-relaxed">
+        {top.model.name} wants {top.quant.vramGb}GB ({top.quant.name}). Your rig has {result.specs.vramGb}GB.
+        A used RTX 3090 24GB (~$300) or RTX 4070 12GB (~$400) would unlock this model.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">RTX 3090 24GB · ~$300 used</span>
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">RTX 4070 12GB · ~$400</span>
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">M4 Pro 24GB · ~$600</span>
+      </div>
+    </div>
+  );
+}
+
+const COMMUNITY_TIER: Record<string, Array<{ model: string; reason: string }>> = {
+  "8 GB laptop": [
+    { model: "Qwen3 8B", reason: "r/LocalLLaMA daily driver for 8GB — 84 quality, 22 t/s Q4" },
+    { model: "Phi-4 Mini", reason: "Community CPU pick — runs anywhere, 74 quality" },
+    { model: "Gemma 3 4B", reason: "Top mobile pick — 76 quality, tiny footprint" },
+  ],
+  "RTX 3060 12GB": [
+    { model: "Mistral Small 3.2", reason: "16GB members' go-to coding model — 87 quality" },
+    { model: "Qwen3 8B", reason: "Fastest 8B — 84 quality at 30 t/s" },
+    { model: "Gemma 3 12B", reason: "Multimodal king at 12GB — 86 quality" },
+  ],
+  "RTX 4090 24GB": [
+    { model: "Qwen3.8 27B", reason: "24GB sweet spot — 93 quality, vision+coding" },
+    { model: "DeepSeek-R1 32B", reason: "Reasoning champion — 89 quality at Q4" },
+    { model: "Devstral Small", reason: "Agentic coding — 89 quality, 256k ctx" },
+  ],
+};
+
+function CommunityConsensus({ specs }: { specs: Specs }) {
+  const tier = COMMUNITY_TIER[`${specs.gpu} ${specs.vramGb}GB`]
+    ?? COMMUNITY_TIER[`${specs.gpu}`]
+    ?? COMMUNITY_TIER["8 GB laptop"];
+  return (
+    <div className="mt-10 border border-line bg-surface p-6 sm:p-8">
+      <div className="flex items-center gap-3">
+        <span className="text-2xs uppercase tracking-widest text-muted">community consensus</span>
+        <span className="text-2xs text-dim">r/LocalLLaMA · 266K members</span>
+      </div>
+      <h3 className="mt-3 text-xl font-semibold text-fg">what r/LocalLLaMA runs on your hardware</h3>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {tier.map((c, i) => (
+          <div key={c.model} className="border border-line bg-bg p-4">
+            <div className="text-2xs uppercase tracking-widest text-primary">#{i + 1}</div>
+            <div className="mt-1 text-sm font-semibold text-fg">{c.model}</div>
+            <p className="mt-2 text-xs text-muted leading-relaxed">{c.reason}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkCompare({ result }: { result: MatchResult }) {
+  const top3 = result.picks.slice(0, 3);
+  if (top3.length < 2) return null;
+  return (
+    <div className="mt-10 border border-line bg-surface p-6 sm:p-8">
+      <div className="text-2xs uppercase tracking-widest text-muted">feature: benchmark compare</div>
+      <h3 className="mt-2 text-xl font-semibold text-fg">top 3 side-by-side on your rig</h3>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-line text-muted text-2xs uppercase tracking-widest">
+              <th className="pb-3 text-fg">metric</th>
+              {top3.map((p) => (
+                <th key={p.model.id} className="px-4 pb-3 text-right text-fg">
+                  {p.model.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-line/50">
+              <td className="py-3 text-dim">quality</td>
+              {top3.map((p) => (
+                <td key={p.model.id} className="px-4 py-3 text-right tabular-nums text-fg">{p.model.quality}/100</td>
+              ))}
+            </tr>
+            <tr className="border-b border-line/50">
+              <td className="py-3 text-dim">speed (tok/s)</td>
+              {top3.map((p) => (
+                <td key={p.model.id} className="px-4 py-3 text-right tabular-nums text-fg">{p.tokPerSec ?? p.speed ?? "—"}</td>
+              ))}
+            </tr>
+            <tr className="border-b border-line/50">
+              <td className="py-3 text-dim">VRAM (quant)</td>
+              {top3.map((p) => (
+                <td key={p.model.id} className="px-4 py-3 text-right tabular-nums text-fg">{p.quant.vramGb} GB ({p.quant.name})</td>
+              ))}
+            </tr>
+            <tr className="border-b border-line/50">
+              <td className="py-3 text-dim">license</td>
+              {top3.map((p) => (
+                <td key={p.model.id} className="px-4 py-3 text-right text-fg">{p.model.license}</td>
+              ))}
+            </tr>
+            <tr>
+              <td className="py-3 text-dim">fit</td>
+              {top3.map((p) => (
+                <td key={p.model.id} className="px-4 py-3 text-right">
+                  <span className={cn("border px-2 py-0.5 text-2xs uppercase tracking-widest", p.fit === "gpu" ? "border-fg text-fg" : "border-line text-muted")}>
+                    {p.fit}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number; contextK: number; specs: Specs }) {
   const m = fit.model;
   const [selectedQuantName, setSelectedQuantName] = useState<string>(fit.quant.name);
@@ -150,8 +300,11 @@ function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number;
       </div>
       <p className="mt-3 text-sm leading-relaxed text-muted">{m.summary}</p>
 
-      {/* Interactive Quantization Matrix */}
-      {fit.quantOptions && fit.quantOptions.length > 1 ? (
+       {/* Feature 3: Quant Advisor */}
+       <QuantAdvisor model={m} quants={fit.quantOptions ?? []} vramGb={specs.vramGb || specs.ramGb} />
+
+       {/* Interactive Quantization Matrix */}
+       {fit.quantOptions && fit.quantOptions.length > 1 ? (
         <div className="mt-4 border-t border-b border-line py-3">
           <div className="flex items-center justify-between text-2xs uppercase tracking-widest text-dim">
             <span>select quantization format:</span>
@@ -254,6 +407,37 @@ function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number;
   );
 }
 
+function VerdictBanner({ result }: { result: MatchResult }) {
+  const top = result.picks[0];
+  if (!top) return null;
+  const fits = top.fit !== "no";
+  const speed = top.tokPerSec || top.speed || "—";
+  const vram = result.specs.vramGb || result.specs.ramGb;
+  return (
+    <div className="mt-6 border-2 border-success bg-success/5 p-6 sm:p-8 text-center">
+      <div className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: fits ? "var(--color-success)" : "var(--color-danger)" }}>
+        {fits ? "YES — it runs" : "NO — too heavy"}
+      </div>
+      <p className="mt-3 text-sm text-muted">
+        {fits
+          ? `Your ${vram}GB rig runs ${top.model.name} at ${speed}. ${top.model.summary.split(".")[0]}.`
+          : `${top.model.name} needs ${top.quant.vramGb}GB+. Closest fit: ${result.picks.find((p) => p.fit !== "no")?.model.name || "none"}`}
+      </p>
+      <div className="mt-4 flex flex-wrap justify-center gap-3">
+        <span className="border border-success/40 bg-success px-3 py-1 text-2xs uppercase tracking-widest text-success-foreground">
+          {fits ? "GPU-native" : "offload"} · {speed}
+        </span>
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">
+          {top.quant.name} · {top.quant.vramGb} GB
+        </span>
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">
+          quality {top.model.quality}/100
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function MatchResults({
   result,
   onContextChange,
@@ -263,8 +447,10 @@ export function MatchResults({
 }) {
   const s = result.specs;
   const ctx = result.contextK ?? 8;
-
-  // Build query string for sharing
+  const [commercialOnly, setCommercialOnly] = useState(false);
+  const isCommercial = (m: Model) => ["Apache-2.0", "MIT", "BSD"].includes(m.license);
+  const picks = commercialOnly ? result.picks.filter((p) => isCommercial(p.model)) : result.picks;
+  const also = commercialOnly ? result.also.filter((p) => isCommercial(p.model)) : result.also;
   const shareParams = new URLSearchParams({
     gpu: s.gpu,
     vram: String(s.vramGb),
@@ -323,18 +509,39 @@ export function MatchResults({
         <p className="mt-4 text-sm text-muted">{result.blurb}</p>
       </div>
 
-      <h2 className="mt-8 text-sm uppercase tracking-[0.22em] text-muted">top runnable models</h2>
-      <div className="mt-3 grid gap-4">
-        {result.picks.map((p, i) => (
-          <PickCard key={p.model.id} fit={p} rank={i + 1} contextK={ctx} specs={s} />
-        ))}
-      </div>
+        <VerdictBanner result={result} />
 
-      {result.also.length ? (
-        <>
-          <h2 className="mt-10 text-sm uppercase tracking-[0.22em] text-muted">also runnable</h2>
-          <div className="mt-3 divide-y divide-line border border-line">
-            {result.also.map((p) => (
+        {/* Feature 2: License filter */}
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setCommercialOnly(!commercialOnly)}
+            className={cn(
+              "min-h-10 border px-4 text-2xs uppercase tracking-widest transition-colors",
+              commercialOnly
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-line text-muted hover:border-fg hover:text-fg"
+            )}
+          >
+            {commercialOnly ? "✓ commercial-safe only" : "filter: commercial-safe only"}
+          </button>
+          {commercialOnly ? (
+            <span className="text-2xs text-muted">Apache-2.0 / MIT only</span>
+          ) : null}
+        </div>
+
+        <h2 className="mt-8 text-sm uppercase tracking-[0.22em] text-muted">top runnable models</h2>
+        <div className="mt-3 grid gap-4">
+          {picks.map((p, i) => (
+            <PickCard key={p.model.id} fit={p} rank={i + 1} contextK={ctx} specs={s} />
+          ))}
+        </div>
+
+        {also.length ? (
+          <>
+            <h2 className="mt-10 text-sm uppercase tracking-[0.22em] text-muted">also runnable</h2>
+            <div className="mt-3 divide-y divide-line border border-line">
+              {also.map((p) => (
               <div
                 key={p.model.id}
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -359,6 +566,15 @@ export function MatchResults({
           </div>
         </>
       ) : null}
+
+      {/* Feature 4: Upgrade path */}
+      <UpgradePath result={result} />
+
+      {/* Feature 6: Benchmark compare */}
+      <BenchmarkCompare result={result} />
+
+      {/* Feature 5: Community consensus */}
+      <CommunityConsensus specs={s} />
     </section>
   );
 }

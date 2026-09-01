@@ -23,6 +23,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
               can i run this
               <span className="caret-blink text-muted">_</span>
             </div>
+            <Link
+              to="/sponsor"
+              className="mt-2 whitespace-nowrap border border-line px-2 py-1 text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg"
+            >
+              add sponsor
+            </Link>
           </Link>
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {NAV.map((item) => (
@@ -34,12 +40,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-            <Link
-              to="/sponsor"
-              className="whitespace-nowrap border border-line-strong px-3 py-2 text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg"
-            >
-              add sponsor
-            </Link>
           </nav>
         </div>
       </header>

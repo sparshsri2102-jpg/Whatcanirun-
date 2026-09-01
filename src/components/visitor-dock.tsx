@@ -40,7 +40,6 @@ function agoLabel(sec?: number | null) {
 }
 
 export function VisitorDock() {
-  const [count, setCount] = useState(18420);
   const [live, setLive] = useState<VisitorPing[]>([]);
   const [you, setYou] = useState<string | null>(null);
 
@@ -50,9 +49,6 @@ export function VisitorDock() {
       getVisitors()
         .then((s) => {
           if (cancelled || !s) return;
-          if (typeof s.monthCount === "number") {
-            setCount(s.monthCount);
-          }
           if (Array.isArray(s.live)) {
             setLive(s.live);
           }
@@ -63,7 +59,7 @@ export function VisitorDock() {
     const id = window.setInterval(load, 8000);
 
     const key = "cir-pinged";
-    if (!sessionStorage.getItem(key)) {
+    if (!sessionStorage.getKey) {
       sessionStorage.setItem(key, "1");
       pingVisitor({ data: { tz: Intl.DateTimeFormat().resolvedOptions().timeZone } })
         .then((r) => {
@@ -91,9 +87,9 @@ export function VisitorDock() {
           </p>
           <div className="mt-5 flex items-baseline gap-3 flex-wrap">
             <span className="text-3xl tabular-nums tracking-tight">
-              {count > 0 ? <AnimatedCount value={count} /> : <span className="text-2xl">growing</span>}
+              <span className="text-2xl">growing</span>
             </span>
-            <span className="text-xs uppercase tracking-widest text-muted">{count > 0 ? 'visitors this month' : 'early builders · be early'}</span>
+            <span className="text-xs uppercase tracking-widest text-muted">early builders · be early</span>
             <span className="ml-1 inline-flex items-center gap-1.5 text-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 dot-live inline-block" />
               <span className="text-emerald-400 uppercase tracking-widest">live</span>

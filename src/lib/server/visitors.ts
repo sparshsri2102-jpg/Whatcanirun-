@@ -35,31 +35,33 @@ export const getVisitors = createServerFn({ method: "GET" }).handler(async () =>
       agoSec: ago(r.created_at),
     }));
 
-    if (live.length < 8) {
-      const extras = CITIES.slice(0, 10).map((c, i) => ({
-        id: -1 - i,
-        city: c.city,
+    // Honest fallback: if <3 real pings, show up to 3 sample nodes labeled as sample
+    if (live.length < 3) {
+      const needed = 3 - live.length;
+      const extras = CITIES.slice(0, needed).map((c, i) => ({
+        id: -1000 - i,
+        city: `${c.city} · sample`,
         lat: c.lat,
         lng: c.lng,
-        agoSec: 12 + i * 17,
+        agoSec: 45 + i * 30,
       }));
-      live = [...live, ...extras].slice(0, 18);
+      live = [...live, ...extras].slice(0, 12);
     }
 
     return {
-      monthCount: typeof stats[0]?.count === "number" ? stats[0].count : 18420,
+      monthCount: typeof stats[0]?.count === "number" ? stats[0].count : 0,
       live,
     } satisfies VisitorState;
   } catch (err) {
     console.warn("[visitors] getVisitors fallback:", err);
     return {
-      monthCount: 18420,
-      live: CITIES.slice(0, 10).map((c, i) => ({
-        id: -1 - i,
-        city: c.city,
+      monthCount: 0,
+      live: CITIES.slice(0, 3).map((c, i) => ({
+        id: -1000 - i,
+        city: `${c.city} · sample`,
         lat: c.lat,
         lng: c.lng,
-        agoSec: 12 + i * 17,
+        agoSec: 60 + i * 30,
       })),
     } satisfies VisitorState;
   }

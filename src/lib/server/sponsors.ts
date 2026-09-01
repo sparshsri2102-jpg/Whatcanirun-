@@ -19,6 +19,8 @@ export const listSponsors = createServerFn({ method: "GET" }).handler(async () =
       where active = true
       order by id asc
     `;
+    // count impression (best-effort, no await blocker)
+    void sql`update sponsor_slots set impressions = coalesce(impressions,0)+1 where active = true`.catch(()=>{});
     return rows || [];
   } catch (err) {
     console.warn("[sponsors] listSponsors fallback:", err);
@@ -62,6 +64,6 @@ export const requestSponsor = createServerFn({ method: "POST" })
       return { ok: true as const };
     } catch (err) {
       console.warn("[sponsors] requestSponsor error:", err);
-      return { ok: true as const };
+      return { ok: false as const, error: "Submission failed — please try again or email founders@myllmstack.vercel.app" };
     }
   });

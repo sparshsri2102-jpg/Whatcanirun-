@@ -425,6 +425,26 @@ function SharePage() {
           >
             {copiedType === "url" ? "✓ link copied!" : "🔗 copy share link"}
           </button>
+          <a
+            href={`https://www.reddit.com/r/LocalLLaMA/submit?title=${encodeURIComponent(`My rig can run ${specs.gpu} — ${topFitList[0]?.name ?? 'local LLM'} fit report`)}&url=${encodeURIComponent(shareUrl)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="min-h-10 inline-flex items-center border border-orange-600/50 bg-orange-950/20 px-3 text-xs uppercase tracking-wider text-orange-300 hover:bg-orange-900/30 transition-colors"
+          >
+            ↗ post to r/LocalLLaMA
+          </a>
+          {typeof navigator !== 'undefined' && (navigator as { share?: (d: { title: string; url: string })=>Promise<void> }).share ? (
+            <button
+              type="button"
+              onClick={() => {
+                const nav = navigator as unknown as { share: (d:{title:string;url:string})=>Promise<void> };
+                nav.share({ title: `My rig: ${specs.gpu} — what can I run?`, url: shareUrl }).catch(()=>{});
+              }}
+              className="min-h-10 border border-line px-3 text-xs uppercase tracking-wider text-muted hover:text-fg"
+            >
+              ▸ share
+            </button>
+          ) : null}
         </div>
       </div>
 

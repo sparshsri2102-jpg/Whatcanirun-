@@ -5,6 +5,7 @@ import type { MatchResult, ModelTask, Specs } from "@/lib/models/types";
 import { MatchResults } from "./match-results";
 import { TerminalProcessing } from "./terminal-processing";
 import { detectSystemHardware } from "@/lib/models/detect-hardware";
+import { createWatcher } from "@/lib/server/watchers";
 import { cn } from "@/lib/utils";
 
 const TASKS: Array<{ id: ModelTask | "any"; label: string }> = [
@@ -207,18 +208,33 @@ export function SpecBench() {
     }
   }
 
+  const [tamTab, setTamTab] = useState<'laptop'|'private'|'free'>('laptop');
+
   return (
     <div>
+      {/* TAM hero tabs */}
+      <div className="flex flex-wrap gap-2 border-b border-line pb-4 mb-6">
+        {[
+          { id: 'laptop' as const, label: 'Can my laptop run it?', desc: '8GB? We find a CPU fit' },
+          { id: 'private' as const, label: 'Private · Offline', desc: 'No cloud bill' },
+          { id: 'free' as const, label: 'Free forever', desc: 'Open weights only' },
+        ].map(t=> (
+          <button key={t.id} type="button" onClick={()=> setTamTab(t.id)} className={cn("border px-3 py-2 text-left flex-1 min-w-[140px]", tamTab===t.id ? "border-fg bg-fg text-bg" : "border-line text-muted hover:border-fg hover:text-fg")}>
+            <div className="text-xs uppercase tracking-widest">{t.label}</div>
+            <div className={cn("text-2xs", tamTab===t.id ? "text-bg/70" : "text-dim")}>{t.desc}</div>
+          </button>
+        ))}
+      </div>
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
-          <p className="text-2xs uppercase tracking-[0.28em] text-muted">step 1 · hardware</p>
+          <p className="text-2xs uppercase tracking-[0.28em] text-muted">step 1 · hardware {tamTab==='laptop' ? '· laptop first' : tamTab==='private' ? '· stays on device' : '· no paywall'}</p>
           <h1 className="mt-3 text-2xl leading-tight sm:text-3xl">
-            paste your specs.
+            {tamTab==='laptop' ? 'your laptop can run an LLM.' : tamTab==='private' ? 'your data stays on device.' : 'paste your specs.'}
             <br />
-            get the models that fit.
+            {tamTab==='laptop' ? 'we prove it.' : tamTab==='private' ? 'find the private fit.' : 'get the models that fit.'}
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted">
-            No signup. Auto-detect your rig via WebGPU, copy dxdiag/neofetch, or drop a screenshot. We compute VRAM and KV cache headroom to rank open-weight models you can actually run.
+            {tamTab==='laptop' ? '8GB iGPU? 16GB MacBook? We rank open-weight models by CPU offload + VRAM — most laptops run a 7B at 8 t/s with no GPU.' : tamTab==='private' ? 'No signup. No cloud. We compute VRAM + KV headroom locally to find offline models that run 100% on your hardware.' : 'No signup. Auto-detect your rig via WebGPU, copy dxdiag/neofetch, or drop a screenshot. We compute VRAM and KV cache headroom to rank open-weight models you can actually run.'}
           </p>
         </div>
         <div className="text-xs leading-relaxed text-muted lg:pt-8">
@@ -459,8 +475,52 @@ export function SpecBench() {
               run({ preset: result.specs, ctx, skipScroll: true });
             }}
           />
+          <WatcherCTA specs={result.specs} />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function WatcherCTA({ specs }: { specs: Specs }) {
+  const [contact, setContact] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const vramTier = specs.unified ? specs.ramGb : specs.vramGb * Math.max(1, specs.gpuCount || 1);
+  async function submit() {
+    if (!contact.trim()) { setStatus("Enter email or Discord webhook URL"); return; }
+    setBusy(true); setStatus(null);
+    try {
+      const res = await createWatcher({ data: { rig: { gpu: specs.gpu, vramGb: specs.vramGb, ramGb: specs.ramGb, unified: specs.unified, gpuCount: specs.gpuCount }, contact: contact.trim() } });
+      if (res && (res as { ok: boolean }).ok) {
+        setDone(true);
+        setStatus((res as { already?: boolean }).already ? "Already watching this rig ✓" : "Watching — we'll alert when a new GGUF fits your rig");
+      } else setStatus((res as { error?: string })?.error || "Failed — try again");
+    } catch { setStatus("Failed — try again"); }
+    finally { setBusy(false); }
+  }
+  if (done) return (
+    <div className="mt-6 border border-emerald-900/40 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-300 flex items-center gap-2">
+      <span>✓</span> <span>{status}</span>
+    </div>
+  );
+  return (
+    <div className="mt-6 border border-line bg-surface p-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="flex-1">
+        <div className="text-2xs uppercase tracking-[0.24em] text-muted">watch this rig · fits ≤ {vramTier}GB</div>
+        <p className="mt-1 text-xs text-muted leading-relaxed">Get pinged when a new GGUF ≤ your rig drops. No account, one email/webhook, unsubscribe anytime.</p>
+        <input
+          value={contact}
+          onChange={e=> setContact(e.target.value)}
+          placeholder="email or https://discord.com/api/webhooks/..."
+          className="mt-2 w-full min-h-10 border border-line bg-bg px-3 text-xs font-mono focus:border-fg focus:outline-none"
+        />
+        {status ? <div className="mt-2 text-xs font-mono text-dim">{status}</div> : null}
+      </div>
+      <button type="button" disabled={busy} onClick={submit} className="min-h-10 shrink-0 border border-fg bg-fg px-4 text-2xs uppercase tracking-widest text-bg disabled:opacity-50 hover:opacity-90">
+        {busy ? "saving…" : "notify me"}
+      </button>
     </div>
   );
 }

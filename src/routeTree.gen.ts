@@ -15,6 +15,7 @@ import { Route as ModelsRouteImport } from './routes/models'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SponsorRouteImport } from './routes/sponsor'
+import { Route as CanSlugRouteImport } from './routes/can.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const SponsorRoute = SponsorRouteImport.update({
   path: '/sponsor',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CanSlugRoute = CanSlugRouteImport.update({
+  id: '/can/$slug',
+  path: '/can/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
+  '/can/$slug': typeof CanSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
+  '/can/$slug': typeof CanSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,14 +79,36 @@ export interface FileRoutesById {
   '/share': typeof ShareRoute
   '/skills': typeof SkillsRoute
   '/sponsor': typeof SponsorRoute
+  '/can/$slug': typeof CanSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
+  fullPaths:
+    | '/'
+    | '/drops'
+    | '/models'
+    | '/share'
+    | '/skills'
+    | '/sponsor'
+    | '/can/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
+  to:
+    | '/'
+    | '/drops'
+    | '/models'
+    | '/share'
+    | '/skills'
+    | '/sponsor'
+    | '/can/$slug'
   id:
-    '__root__' | '/' | '/drops' | '/models' | '/share' | '/skills' | '/sponsor'
+    | '__root__'
+    | '/'
+    | '/drops'
+    | '/models'
+    | '/share'
+    | '/skills'
+    | '/sponsor'
+    | '/can/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -88,6 +118,7 @@ export interface RootRouteChildren {
   ShareRoute: typeof ShareRoute
   SkillsRoute: typeof SkillsRoute
   SponsorRoute: typeof SponsorRoute
+  CanSlugRoute: typeof CanSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -134,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SponsorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/can/$slug': {
+      id: '/can/$slug'
+      path: '/can/$slug'
+      fullPath: '/can/$slug'
+      preLoaderRoute: typeof CanSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -144,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShareRoute: ShareRoute,
   SkillsRoute: SkillsRoute,
   SponsorRoute: SponsorRoute,
+  CanSlugRoute: CanSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

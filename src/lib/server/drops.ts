@@ -78,7 +78,7 @@ async function fetchGithub(): Promise<DropItem[]> {
   const out: DropItem[] = [];
   const seen = new Set<string>();
   for (const raw of queries) {
-    const q = encodeURIComponent(raw);
+    const q = encodeURIComponent(`${raw} fork:false archived:false`);
     const res = await fetch(
       `https://api.github.com/search/repositories?q=${q}&sort=updated&order=desc&per_page=8`,
       { headers: ghHeaders() },
@@ -154,7 +154,14 @@ export const listDrops = createServerFn({ method: "GET" }).handler(async () => {
     });
   }
 
-  hfItems.sort((a, b) => +new Date(b.when) - +new Date(a.when));
+  // Rank: 70% recency, 30% popularity — new good drops surface fast
+  function dropScore(d: DropItem): number {
+    const ageDays = Math.max(0, (Date.now() - +new Date(d.when)) / 86400000);
+    const rec = 1 / (1 + ageDays); // 1 = now, 0.5 = 1d, 0.1 = 9d
+    const pop = Math.log10((d.likes || 1) + (d.downloads || 0) / 200 + 1) / 4; // 0-1 approx
+    return rec * 0.7 + pop * 0.3;
+  }
+  hfItems.sort((a, b) => dropScore(b) - dropScore(a));
   const items = [...hfItems.slice(0, 28), ...github.slice(0, 10)];
   cache = { at: Date.now(), items };
   return items;

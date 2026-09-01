@@ -89,15 +89,15 @@ export function VisitorDock() {
             Coarse location inferred from browser timezone without fingerprinting or tracking cookies.
             Every blinking node represents an active hardware builder browsing the open-weight registry.
           </p>
-          <div className="mt-5 flex items-baseline gap-3">
+          <div className="mt-5 flex items-baseline gap-3 flex-wrap">
             <span className="text-3xl tabular-nums tracking-tight">
-              <AnimatedCount value={count} />
+              {count > 0 ? <AnimatedCount value={count} /> : <span className="text-2xl">growing</span>}
             </span>
-            <span className="text-xs uppercase tracking-widest text-muted">visitors this month</span>
+            <span className="text-xs uppercase tracking-widest text-muted">{count > 0 ? 'visitors this month' : 'early builders · be early'}</span>
             <span className="ml-1 inline-flex items-center gap-1.5 text-2xs">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 dot-live inline-block" />
               <span className="text-emerald-400 uppercase tracking-widest">live</span>
-              <span className="tabular-nums text-muted">{live.length} active</span>
+              <span className="tabular-nums text-muted">{live.filter(v=> !v.city.includes('sample')).length} active{live.some(v=>v.city.includes('sample'))?' · sample nodes shown':''}</span>
             </span>
           </div>
           {you ? (

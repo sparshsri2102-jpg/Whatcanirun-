@@ -1,5 +1,5 @@
 import { n as __esmMin } from "../_runtime.mjs";
-import { a as init_fetch_blob, i as Blob, n as File, r as init_file } from "./fetch-blob+[...].mjs";
+import { a as init_fetch_blob, i as Blob, n as File, r as init_file } from "./fetch-blob_[...].mjs";
 //#region node_modules/formdata-polyfill/esm.min.js
 /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
 /** @param {FormData} F */

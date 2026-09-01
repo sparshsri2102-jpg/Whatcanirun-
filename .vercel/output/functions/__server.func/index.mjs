@@ -1,5 +1,5 @@
 globalThis.__nitro_main__ = import.meta.url;
-import { i as toEventHandler, n as HTTPError, r as defineLazyEventHandler, s as NodeResponse, t as H3Core } from "./_libs/h3+rou3+srvx.mjs";
+import { i as toEventHandler, n as HTTPError, o as NodeResponse, r as defineLazyEventHandler, t as H3Core } from "./_libs/h3_rou3_srvx.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 //#region node_modules/nitro/dist/runtime/internal/route-rules.mjs
@@ -459,11 +459,11 @@ var findRouteRules = /* @__PURE__ */ (() => {
 		return r;
 	};
 })();
-var _lazy_0jRgqU = defineLazyEventHandler(() => import("./_chunks/ssr-renderer.mjs"));
+var _lazy_nVMSQc = defineLazyEventHandler(() => import("./_chunks/ssr-renderer.mjs"));
 var findRoute = /* @__PURE__ */ (() => {
 	const data = {
 		route: "/**",
-		handler: _lazy_0jRgqU
+		handler: _lazy_nVMSQc
 	};
 	return ((_m, p) => {
 		return {

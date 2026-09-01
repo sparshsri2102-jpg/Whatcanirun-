@@ -1,8 +1,8 @@
 import { r as __exportAll } from "../_runtime.mjs";
-import { A as invariant, D as resolveManifestCssLink, E as resolveManifestAssetLink, F as isResolvedRedirect, I as parseRedirect, L as rootRouteId, O as _getRenderedMatches, P as isRedirect, R as isNotFound, T as getStylesheetHref, a as isSsrResponse, c as stripSsrResponseBody, d as RouterProvider, i as disposeSsrResponseDetached, k as executeRewriteInput, n as bindSsrResponseToRequest, o as normalizeSsrResponse, r as defineHandlerCallback, s as replaceSsrResponse, t as renderRouterToStream, w as getScriptPreloadAttrs, y as require_jsx_runtime, z as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
+import { A as invariant, D as resolveManifestCssLink, E as resolveManifestAssetLink, F as isResolvedRedirect, I as parseRedirect, L as rootRouteId, O as _getRenderedMatches, P as isRedirect, R as isNotFound, T as getStylesheetHref, a as isSsrResponse, c as stripSsrResponseBody, d as RouterProvider, i as disposeSsrResponseDetached, k as executeRewriteInput, n as bindSsrResponseToRequest, o as normalizeSsrResponse, r as defineHandlerCallback, s as replaceSsrResponse, t as renderRouterToStream, w as getScriptPreloadAttrs, y as require_jsx_runtime, z as require_react } from "../_libs/@tanstack/react-router_[...].mjs";
 import { n as createMemoryHistory } from "../_libs/tanstack__history.mjs";
-import { a as getOrigin, c as createSerializationAdapter, d as toCrossJSONAsync, f as toCrossJSONStream, i as getNormalizedURL, l as makeSerovalPlugin, n as mergeHeaders, o as defaultSerovalPlugins, r as attachRouterServerSsrUtils, s as createRawStreamRPCPlugin, t as waitForRequest, u as fromJSON } from "../_libs/@tanstack/router-core+[...].mjs";
-import { n as toResponse, t as H3Event } from "../_libs/h3-v2.mjs";
+import { a as getOrigin, c as createSerializationAdapter, d as toCrossJSONAsync, f as toCrossJSONStream, i as getNormalizedURL, l as makeSerovalPlugin, n as mergeHeaders, o as defaultSerovalPlugins, r as attachRouterServerSsrUtils, s as createRawStreamRPCPlugin, t as waitForRequest, u as fromJSON } from "../_libs/@tanstack/router-core_[...].mjs";
+import { n as toResponse, t as H3Event } from "../_libs/h3-v2_rou3.mjs";
 import { AsyncLocalStorage } from "node:async_hooks";
 //#region node_modules/.nitro/vite/services/ssr/index.js
 var ssr_exports = /* @__PURE__ */ __exportAll({
@@ -87,7 +87,7 @@ var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-BMqg5xWb.mjs");
+	const { tsrStartManifest } = await import("../_tanstack-start-manifest_v-CyXNOx3U.mjs");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -109,39 +109,47 @@ async function getStartManifest(matchedRoutes) {
 var manifest = {
 	"0f20ea8d88e6bca0e347ae704b101ad632c0e28596608d962176764d0f59d589": {
 		functionName: "listDrops_createServerFn_handler",
-		importer: () => import("./drops-CuCOdLs9.mjs")
+		importer: () => import("./drops-DCYb0hb_.mjs")
 	},
 	"0f6958fd4d867134aee86748ef9d51f24deaf4ebaa1d51f524d4d942bc11bd4a": {
 		functionName: "searchSkills_createServerFn_handler",
-		importer: () => import("./skills-_uXWF4q8.mjs")
+		importer: () => import("./skills-Chzje-Qg.mjs")
 	},
 	"1b40b08eeab31fb674b55215b4db668ba7fc638fd7322a443208d339ddd7a2ff": {
 		functionName: "sendWebhookTest_createServerFn_handler",
-		importer: () => import("./drops-CuCOdLs9.mjs")
+		importer: () => import("./drops-DCYb0hb_.mjs")
 	},
 	"24d50309f08a3565a4816e61411c6630d8150923748189a2c2efd2a7f578535c": {
 		functionName: "pingVisitor_createServerFn_handler",
-		importer: () => import("./visitors-BEBx66mH.mjs")
+		importer: () => import("./visitors-CXfCoHF0.mjs")
+	},
+	"328ecb5d6571b059b39913e7f6792b805c74e63cc27d82bf06b709aa0c0493d6": {
+		functionName: "getWatcherStats_createServerFn_handler",
+		importer: () => import("./watchers-BL89_iHG.mjs")
 	},
 	"50b1eb53820029655ea8dc105ced965adc7689b7241576868eefdff46ab685ab": {
 		functionName: "requestSponsor_createServerFn_handler",
-		importer: () => import("./sponsors-BfqfqETB.mjs")
+		importer: () => import("./sponsors--nccJ8j9.mjs")
 	},
 	"609823e73f8ad04de7d6c8bd4c11d25f799c8fc9f55ab09acf45ef35f56ed8b2": {
 		functionName: "listSponsors_createServerFn_handler",
-		importer: () => import("./sponsors-BfqfqETB.mjs")
+		importer: () => import("./sponsors--nccJ8j9.mjs")
 	},
 	"7575e7289b9d9fdbe0ea30f57754748e0491cacec1b712a9e1af873c24faed46": {
 		functionName: "getRssFeedXml_createServerFn_handler",
-		importer: () => import("./drops-CuCOdLs9.mjs")
+		importer: () => import("./drops-DCYb0hb_.mjs")
 	},
 	"d6ccf6d0bbaae0347170620da947a906604559cde29ab3f0d7a932ebb5d5382b": {
 		functionName: "getVisitors_createServerFn_handler",
-		importer: () => import("./visitors-BEBx66mH.mjs")
+		importer: () => import("./visitors-CXfCoHF0.mjs")
 	},
 	"e271323a77e71d3096f944cf1828bcbfd3ffbbec40ca9b0f9e18f73fc5fb9a76": {
 		functionName: "matchHardware_createServerFn_handler",
 		importer: () => import("./match-Db2Xl88i.mjs")
+	},
+	"e699ba8ef13787105920af2953c52e72704cc116b7823f9a54dc90c8d83a2d75": {
+		functionName: "createWatcher_createServerFn_handler",
+		importer: () => import("./watchers-BL89_iHG.mjs")
 	}
 };
 async function getServerFnById(id, access) {
@@ -1411,7 +1419,7 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./router-DbqKd8P6.mjs").then((n) => n.t),
+		import("./router-_1zSxGN-.mjs").then((n) => n.t),
 		import("./start-5Z2QO8AU.mjs"),
 		import("./empty-plugin-adapters-D9UWiqvJ.mjs")
 	]);

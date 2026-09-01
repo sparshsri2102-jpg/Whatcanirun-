@@ -1,0 +1,332 @@
+import { o as __toESM } from "../_runtime.mjs";
+import { _ as Link, y as require_jsx_runtime, z as require_react } from "../_libs/@tanstack/react-router_[...].mjs";
+import { t as createServerFn } from "./ssr.mjs";
+import { i as createSsrRpc, r as SiteShell } from "./router-_1zSxGN-.mjs";
+import { t as cn } from "./utils-C_uf36nf.mjs";
+import { t as searchLocalSkills } from "./catalog-CRaP_Poh.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/skills-VTXaCCPI.js
+var import_react = /* @__PURE__ */ __toESM(require_react());
+var import_jsx_runtime = require_jsx_runtime();
+var searchSkills = createServerFn({ method: "POST" }).validator((input) => input).handler(createSsrRpc("0f6958fd4d867134aee86748ef9d51f24deaf4ebaa1d51f524d4d942bc11bd4a"));
+var EXAMPLES = [
+	"I want a skill that can work as my CMO",
+	"act as a staff SRE during incidents",
+	"product manager who writes PRDs",
+	"security review for a web app",
+	"financial modeling and SaaS valuation",
+	"superpowers TDD and refactoring",
+	"technical writer for API docs",
+	"data engineer with SQL and dbt"
+];
+var CATEGORIES = [
+	{
+		id: "all",
+		label: "all skills"
+	},
+	{
+		id: "leadership",
+		label: "c-level / gtm"
+	},
+	{
+		id: "engineering",
+		label: "code & tdd"
+	},
+	{
+		id: "security",
+		label: "appsec & audit"
+	},
+	{
+		id: "devops",
+		label: "sre & devops"
+	},
+	{
+		id: "design",
+		label: "frontend / ui"
+	},
+	{
+		id: "data",
+		label: "data & rag"
+	},
+	{
+		id: "content",
+		label: "seo & copy"
+	},
+	{
+		id: "product",
+		label: "pm & qa"
+	}
+];
+function getRecommendedModel(tags, role) {
+	const t = tags.join(" ").toLowerCase() + " " + role.toLowerCase();
+	if (t.includes("code") || t.includes("engineering") || t.includes("tdd") || t.includes("cto") || t.includes("sre") || t.includes("rust") || t.includes("python")) return {
+		name: "Qwen 2.5 Coder 32B / 14B",
+		task: "Code Specialist",
+		link: "/models?task=code"
+	};
+	if (t.includes("reason") || t.includes("math") || t.includes("analyst") || t.includes("finance") || t.includes("cfo") || t.includes("valuation") || t.includes("security")) return {
+		name: "DeepSeek-R1-Distill-Qwen-14B",
+		task: "Reasoning & Logic",
+		link: "/models?task=reason"
+	};
+	if (t.includes("vision") || t.includes("design") || t.includes("ui") || t.includes("frontend") || t.includes("visual")) return {
+		name: "Qwen 2.5 VL 7B / 72B",
+		task: "Vision & UI Taste",
+		link: "/models?task=vision"
+	};
+	if (t.includes("cmo") || t.includes("pm") || t.includes("copy") || t.includes("marketing") || t.includes("writer") || t.includes("sales")) return {
+		name: "Llama 3.3 70B / Mistral Small 24B",
+		task: "Instruction & Writing",
+		link: "/models?task=chat"
+	};
+	return {
+		name: "Llama 3.1 8B / Gemma 2 9B",
+		task: "Fast General Chat",
+		link: "/models?task=chat"
+	};
+}
+function SkillsPage() {
+	const [q, setQ] = (0, import_react.useState)("");
+	const [category, setCategory] = (0, import_react.useState)("all");
+	const [busy, setBusy] = (0, import_react.useState)(false);
+	const [serverHits, setServerHits] = (0, import_react.useState)(null);
+	const [liveStarsMap, setLiveStarsMap] = (0, import_react.useState)({});
+	const [error, setError] = (0, import_react.useState)(null);
+	const [copiedId, setCopiedId] = (0, import_react.useState)(null);
+	const localHits = (0, import_react.useMemo)(() => {
+		const hits = searchLocalSkills(q).map((s) => ({
+			...s,
+			stars: liveStarsMap[s.repo] ?? s.stars,
+			origin: "catalog"
+		}));
+		if (category === "all") return hits;
+		return hits.filter((h) => h.category === category);
+	}, [
+		q,
+		category,
+		liveStarsMap
+	]);
+	async function runServerSearch(queryText) {
+		setBusy(true);
+		setError(null);
+		try {
+			const rows = await searchSkills({ data: { query: queryText } });
+			setServerHits(rows);
+			const newStars = {};
+			rows.forEach((r) => {
+				newStars[r.repo] = r.stars;
+			});
+			setLiveStarsMap((prev) => ({
+				...prev,
+				...newStars
+			}));
+		} catch {
+			setError("Live search timed out. Displaying curated skills instantly.");
+		} finally {
+			setBusy(false);
+		}
+	}
+	(0, import_react.useEffect)(() => {
+		runServerSearch("");
+	}, []);
+	const displayHits = (0, import_react.useMemo)(() => {
+		let list = serverHits ?? localHits;
+		if (q.trim()) list = localHits;
+		if (category !== "all") list = list.filter((item) => item.category === category);
+		return list;
+	}, [
+		serverHits,
+		localHits,
+		q,
+		category
+	]);
+	function copyRepo(id, repo) {
+		try {
+			if (navigator.clipboard?.writeText) navigator.clipboard.writeText(`https://github.com/${repo}`);
+			setCopiedId(id);
+			setTimeout(() => setCopiedId(null), 1500);
+		} catch {}
+	}
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SiteShell, { children: [
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "flex items-center justify-between",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "text-2xs uppercase tracking-[0.28em] text-muted",
+				children: "skill discovery engine"
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+				className: "text-2xs uppercase tracking-widest text-dim",
+				children: [displayHits.length, " matched skills"]
+			})]
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+			className: "mt-3 text-2xl sm:text-3xl",
+			children: "describe the job. get the exact skill."
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+			className: "mt-3 max-w-2xl text-sm leading-relaxed text-muted",
+			children: [
+				"Open-source agent skill packs and role prompts from GitHub, matched by semantic intent. Say what you want in plain language — ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "text-fg font-mono",
+					children: "“be my CMO”"
+				}),
+				",",
+				" ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "text-fg font-mono",
+					children: "“act as staff SRE during incidents”"
+				}),
+				", or",
+				" ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					className: "text-fg font-mono",
+					children: "“write rigorous PRDs”"
+				}),
+				"."
+			]
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+			className: "mt-6 flex flex-col gap-3 sm:flex-row",
+			onSubmit: (e) => {
+				e.preventDefault();
+				runServerSearch(q);
+			},
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "relative flex-1",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+					value: q,
+					onChange: (e) => {
+						const val = e.target.value;
+						setQ(val);
+					},
+					placeholder: "Type any role or job: e.g. I want a skill that can work as my CMO…",
+					className: "min-h-12 w-full border border-line bg-surface px-4 text-sm focus:border-fg focus:outline-none"
+				}), q ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					type: "button",
+					onClick: () => setQ(""),
+					className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs uppercase text-muted hover:text-fg",
+					children: "clear"
+				}) : null]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				type: "submit",
+				disabled: busy,
+				className: "min-h-12 bg-fg px-6 text-sm uppercase tracking-widest text-bg transition-opacity disabled:opacity-50 hover:opacity-90",
+				children: busy ? "searching…" : "find best skill"
+			})]
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "mt-4 flex flex-wrap items-center gap-2",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+				className: "text-2xs uppercase tracking-widest text-muted mr-1",
+				children: "filter:"
+			}), CATEGORIES.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				type: "button",
+				onClick: () => setCategory(c.id),
+				className: cn("border px-2.5 py-1 text-2xs uppercase tracking-wider transition-colors", category === c.id ? "border-fg bg-fg text-bg" : "border-line bg-surface text-muted hover:text-fg hover:border-fg/50"),
+				children: c.label
+			}, c.id))]
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "mt-3 flex flex-wrap items-center gap-2",
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+				className: "text-2xs uppercase tracking-widest text-muted mr-1",
+				children: "try:"
+			}), EXAMPLES.map((ex) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+				type: "button",
+				className: "border border-line/60 bg-surface/50 px-2.5 py-1 text-left text-2xs text-muted hover:border-fg hover:text-fg transition-colors",
+				onClick: () => {
+					setQ(ex);
+					runServerSearch(ex);
+				},
+				children: ex
+			}, ex))]
+		}),
+		error ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "mt-4 text-xs text-dim",
+			children: error
+		}) : null,
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "mt-8 divide-y divide-line border border-line",
+			children: displayHits.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "p-8 text-center text-sm text-muted",
+				children: [
+					"No exact skills matched \"",
+					q,
+					"\". Try broadening your role request or pick one of the suggested prompts above."
+				]
+			}) : displayHits.map((s, i) => {
+				const rec = getRecommendedModel(s.tags, s.role);
+				return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+					className: "grid gap-3 px-4 py-4 hover:bg-surface transition-colors sm:grid-cols-[auto_1fr_auto] sm:items-start",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "text-2xs tabular-nums text-muted pt-0.5",
+							children: String(i + 1).padStart(2, "0")
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "min-w-0",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex flex-wrap items-center gap-2",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+											href: s.url,
+											target: "_blank",
+											rel: "noreferrer",
+											className: "text-sm font-medium underline underline-offset-4 hover:text-fg",
+											children: s.name
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+											className: "text-xs text-muted",
+											children: ["· ", s.repo]
+										}),
+										s.matchReason ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "border border-line bg-surface px-1.5 py-0.5 text-2xs text-fg",
+											children: s.matchReason
+										}) : null
+									]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "mt-1.5 text-xs leading-relaxed text-muted max-w-3xl",
+									children: s.description
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "mt-3 flex flex-wrap items-center gap-2 text-2xs uppercase tracking-widest text-dim",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "border border-line px-1.5 py-0.5 text-muted",
+											children: s.role
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "·" }),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+											className: "text-fg font-medium",
+											children: ["Best local model: ", rec.name]
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Link, {
+											to: rec.link,
+											className: "text-fg underline underline-offset-2 hover:opacity-80",
+											children: "verify fit →"
+										})
+									]
+								})
+							]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center gap-3 self-start sm:flex-col sm:items-end",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								className: "text-xs tabular-nums text-fg",
+								children: [s.stars.toLocaleString(), " ★"]
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								onClick: () => copyRepo(s.id, s.repo),
+								className: "border border-line px-2 py-0.5 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg",
+								children: copiedId === s.id ? "✓ copied" : "copy link"
+							})]
+						})
+					]
+				}, s.id);
+			})
+		})
+	] });
+}
+//#endregion
+export { SkillsPage as component };

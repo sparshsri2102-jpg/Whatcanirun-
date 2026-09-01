@@ -1,6 +1,6 @@
 import { n as __esmMin, r as __exportAll } from "../_runtime.mjs";
 import { n as init_dist, t as dataUriToBuffer } from "./data-uri-to-buffer.mjs";
-import { a as init_fetch_blob, i as Blob, n as File, t as init_from } from "./fetch-blob+[...].mjs";
+import { a as init_fetch_blob, i as Blob, n as File, t as init_from } from "./fetch-blob_[...].mjs";
 import { n as formDataToBlob, r as init_esm_min, t as FormData } from "./formdata-polyfill.mjs";
 import nodeHTTP from "node:http";
 import Stream, { PassThrough, pipeline } from "node:stream";

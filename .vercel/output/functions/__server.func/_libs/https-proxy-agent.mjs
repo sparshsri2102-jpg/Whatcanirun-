@@ -1,5 +1,5 @@
 import { i as __require, t as __commonJSMin } from "../_runtime.mjs";
-import { t as require_src } from "./debug+[...].mjs";
+import { t as require_src } from "./debug_[...].mjs";
 import { t as require_dist$1 } from "./agent-base.mjs";
 //#region node_modules/https-proxy-agent/dist/parse-proxy-response.js
 var require_parse_proxy_response = /* @__PURE__ */ __commonJSMin(((exports) => {

@@ -10316,7 +10316,7 @@ var __vite_optional_peer_dep_bufferutil_ws_exports = /* @__PURE__ */ __exportAll
 var __vite_optional_peer_dep_bufferutil_ws_default;
 var init___vite_optional_peer_dep_bufferutil_ws = __esmMin((() => {
 	__vite_optional_peer_dep_bufferutil_ws_default = {};
-	throw new Error(`Could not resolve "bufferutil" imported by "ws".`);
+	throw new Error(`Could not resolve "bufferutil" imported by "ws". Is it installed?`);
 }));
 //#endregion
 //#region node_modules/ws/lib/buffer-util.js
@@ -10808,7 +10808,7 @@ var __vite_optional_peer_dep_utf_8_validate_ws_exports = /* @__PURE__ */ __expor
 var __vite_optional_peer_dep_utf_8_validate_ws_default;
 var init___vite_optional_peer_dep_utf_8_validate_ws = __esmMin((() => {
 	__vite_optional_peer_dep_utf_8_validate_ws_default = {};
-	throw new Error(`Could not resolve "utf-8-validate" imported by "ws".`);
+	throw new Error(`Could not resolve "utf-8-validate" imported by "ws". Is it installed?`);
 }));
 //#endregion
 //#region node_modules/ws/lib/validation.js
@@ -20186,7 +20186,12 @@ function liveConnectConfigToVertex(fromObject, parentObject) {
 		});
 		setValueByPath(parentObject, ["setup", "safetySettings"], transformedList);
 	}
-	if (getValueByPath(fromObject, ["translationConfig"]) !== void 0) throw new Error("translationConfig parameter is only supported in Gemini Developer API mode, not in Gemini Enterprise Agent Platform mode.");
+	const fromTranslationConfig = getValueByPath(fromObject, ["translationConfig"]);
+	if (parentObject !== void 0 && fromTranslationConfig != null) setValueByPath(parentObject, [
+		"setup",
+		"generationConfig",
+		"translationConfig"
+	], fromTranslationConfig);
 	return toObject;
 }
 function liveConnectParametersToMldev(apiClient, fromObject) {
@@ -22695,7 +22700,7 @@ var CONTENT_TYPE_HEADER = "Content-Type";
 var SERVER_TIMEOUT_HEADER = "X-Server-Timeout";
 var USER_AGENT_HEADER = "User-Agent";
 var GOOGLE_API_CLIENT_HEADER = "x-goog-api-client";
-var LIBRARY_LABEL = `google-genai-sdk/2.19.0`;
+var LIBRARY_LABEL = `google-genai-sdk/2.20.0`;
 var VERTEX_AI_API_DEFAULT_VERSION = "v1beta1";
 var GOOGLE_AI_API_DEFAULT_VERSION = "v1beta";
 var MULTI_REGIONAL_LOCATIONS = /* @__PURE__ */ new Set(["us", "eu"]);
@@ -23669,8 +23674,8 @@ var Live = class {
 			onopen: onopenAwaitedCallback,
 			onmessage: (event) => {
 				handleWebSocketMessage(apiClient, (msg) => {
-					if (msg.setupComplete && !session.setupComplete) {
-						session.setupComplete = msg.setupComplete;
+					if (msg["setupComplete"] && !session.setupComplete) {
+						session.setupComplete = msg["setupComplete"];
 						setupCompleteResolve({});
 					}
 					if (sessionResolved) callbacks.onmessage(msg);
@@ -32759,8 +32764,7 @@ async function uploadBlobInternal(file, uploadUrl, apiClient, httpOptions) {
 		while (retryCount < MAX_RETRY_COUNT) {
 			const mergedHeaders = Object.assign(Object.assign({}, (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.headers) || {}), {
 				"X-Goog-Upload-Command": uploadCommand,
-				"X-Goog-Upload-Offset": String(offset),
-				"Content-Length": String(chunkSize)
+				"X-Goog-Upload-Offset": String(offset)
 			});
 			response = await apiClient.request({
 				path: "",
@@ -32952,7 +32956,6 @@ var NodeUploader = class {
 					const mergedHeaders = Object.assign(Object.assign({}, (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.headers) || {}), {
 						"X-Goog-Upload-Command": uploadCommand,
 						"X-Goog-Upload-Offset": String(offset),
-						"Content-Length": String(bytesRead),
 						"X-Goog-Upload-File-Name": fileName
 					});
 					response = await apiClient.request({

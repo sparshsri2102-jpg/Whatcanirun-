@@ -59,7 +59,7 @@ export function VisitorDock() {
     const id = window.setInterval(load, 8000);
 
     const key = "cir-pinged";
-    if (!sessionStorage.getKey) {
+    if (!sessionStorage.getItem(key)) {
       sessionStorage.setItem(key, "1");
       pingVisitor({ data: { tz: Intl.DateTimeFormat().resolvedOptions().timeZone } })
         .then((r) => {

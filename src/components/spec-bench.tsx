@@ -6,6 +6,7 @@ import { MatchResults } from "./match-results";
 import { TerminalProcessing } from "./terminal-processing";
 import { detectSystemHardware } from "@/lib/models/detect-hardware";
 import { createWatcher } from "@/lib/server/watchers";
+import { bumpStreak, StreakBadge } from "./activity-ticker";
 import { cn } from "@/lib/utils";
 
 const TASKS: Array<{ id: ModelTask | "any"; label: string }> = [
@@ -33,6 +34,13 @@ Installed physical memory: 32.0 GB
 Processor: AMD Ryzen 7 5800X
 
 or a screenshot of Task Manager / About This Mac / neofetch`;
+
+const EXAMPLE_PRESET_ID = "rtx-4070";
+const EXAMPLE_RAW = `GPU: NVIDIA GeForce RTX 4070 12GB
+VRAM: 12 GB
+RAM: 32 GB
+CPU: AMD Ryzen 7 5800X
+OS: Windows 11`;
 
 async function fileToDataUrl(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
@@ -139,6 +147,7 @@ export function SpecBench() {
         setResult(null);
       } else {
         setResult(res);
+        bumpStreak();
         if (!opts?.skipScroll) {
           setTimeout(() => {
             resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -227,7 +236,10 @@ export function SpecBench() {
       </div>
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div>
-          <p className="text-2xs uppercase tracking-[0.28em] text-muted">step 1 · hardware {tamTab==='laptop' ? '· laptop first' : tamTab==='private' ? '· stays on device' : '· no paywall'}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-2xs uppercase tracking-[0.28em] text-muted">step 1 · hardware {tamTab==='laptop' ? '· laptop first' : tamTab==='private' ? '· stays on device' : '· no paywall'}</p>
+            <StreakBadge />
+          </div>
           <h1 className="mt-3 text-2xl leading-tight sm:text-3xl">
             {tamTab==='laptop' ? 'your laptop can run an LLM.' : tamTab==='private' ? 'your data stays on device.' : 'paste your specs.'}
             <br />
@@ -414,15 +426,57 @@ export function SpecBench() {
         </div>
       </div>
 
+      {/* First-time demo: show value in 2s without paste */}
+      {!result && !busy ? (
+        <div className="mt-6 border border-primary/20 bg-primary/[0.06] p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-2xs uppercase tracking-[0.24em] text-primary">new here? see it work in 2s</div>
+              <p className="mt-2 text-sm leading-relaxed text-fg">Try an example — RTX 4070 12GB + 32GB RAM — no paste needed. See runnable models instantly.</p>
+              <p className="mt-1 font-mono text-2xs text-muted">GPU: RTX 4070 12GB · RAM: 32GB · OS: Windows 11 · {EXAMPLE_RAW.split("\n").length} lines parsed in demo</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const preset = PRESETS.find((p) => p.id === EXAMPLE_PRESET_ID)?.specs;
+                if (preset) {
+                  setText(EXAMPLE_RAW);
+                  run({ preset: { ...preset, source: "preset", raw: EXAMPLE_RAW } });
+                }
+              }}
+              className="shrink-0 min-h-11 bg-fg px-5 text-sm uppercase tracking-widest text-bg hover:opacity-90 transition-opacity"
+            >
+              ▸ try example →
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-2xs">
+            <span className="border border-line bg-bg px-2 py-1 text-muted">✓ no signup</span>
+            <span className="border border-line bg-bg px-2 py-1 text-muted">✓ results in ~600ms</span>
+            <span className="border border-line bg-bg px-2 py-1 text-muted">✓ or paste your own below</span>
+          </div>
+        </div>
+      ) : null}
+
       <label className="mt-6 block">
         <span className="sr-only">Hardware specifications</span>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={8}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              e.preventDefault();
+              if (!busy) run();
+            }
+          }}
+          rows={7}
           placeholder={PLACEHOLDER}
-          className="min-h-44 w-full resize-y border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-dim focus:border-fg focus:outline-none"
+          aria-label="Hardware specifications"
+          className="min-h-[180px] sm:min-h-44 w-full resize-y border border-line bg-surface px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-dim focus:border-fg focus:outline-none focus-visible:ring-1 focus-visible:ring-fg/20"
         />
+        <div className="mt-2 flex items-center justify-between text-2xs text-dim">
+          <span>paste dxdiag / neofetch / About This Mac text</span>
+          <span className="hidden sm:inline font-mono">⌘+Enter to match</span>
+        </div>
       </label>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -462,10 +516,38 @@ export function SpecBench() {
         ) : null}
       </div>
 
-      {error ? <p className="mt-4 text-sm text-fg">{error}</p> : null}
+      {error ? (
+        <div className="mt-4 border border-amber-900/30 bg-amber-950/10 p-4" role="alert" aria-live="polite">
+          <div className="text-sm text-fg">{error}</div>
+          <p className="mt-2 text-xs leading-relaxed text-muted">Closest alternatives — try one click:</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {PRESETS.slice(0,4).map(p=> (
+              <button key={p.id} type="button" onClick={()=> run({ preset: { ...p.specs, source:"preset", raw: p.label } })} className="border border-line bg-bg px-3 py-1.5 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-fg">{p.label}</button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {busy ? (
-        <TerminalProcessing specsSummary={activeSummary} contextK={contextK} />
+        <div aria-live="polite" aria-busy="true">
+          <TerminalProcessing specsSummary={activeSummary} contextK={contextK} />
+          <div className="mt-6 grid gap-4">
+            {[1,2,3].map(i=> (
+              <div key={i} className="border border-line bg-surface p-4 sm:p-5 animate-pulse">
+                <div className="h-3 w-20 bg-line" />
+                <div className="mt-3 h-5 w-48 bg-line" />
+                <div className="mt-3 h-3 w-full bg-line/60" />
+                <div className="mt-2 h-3 w-5/6 bg-line/60" />
+                <div className="mt-4 grid grid-cols-4 gap-3">
+                  <div className="h-10 bg-bg border border-line" />
+                  <div className="h-10 bg-bg border border-line" />
+                  <div className="h-10 bg-bg border border-line" />
+                  <div className="h-10 bg-bg border border-line" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : result ? (
         <div className="enter-up mt-10" ref={resultRef}>
           <MatchResults

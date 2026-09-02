@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { SponsorTicker } from "./sponsor-ticker";
 import { VisitorDock } from "./visitor-dock";
+import { ActivityTicker } from "./activity-ticker";
 
 const NAV = [
   { to: "/", label: "bench" },
@@ -17,19 +18,22 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <SponsorTicker position="top" />
       <header className="border-b border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-          <Link to="/" className="group block">
-            <div className="text-2xs uppercase tracking-[0.28em] text-muted">open weights × hardware</div>
-            <div className="mt-1 text-xl font-medium tracking-tight sm:text-2xl">
-              can i run this
-              <span className="caret-blink text-muted">_</span>
-            </div>
+          <div className="group">
+            <Link to="/" className="block">
+              <div className="text-2xs uppercase tracking-[0.28em] text-muted">open weights × hardware</div>
+              <div className="mt-1 text-xl font-medium tracking-tight sm:text-2xl">
+                can i run this
+                <span className="caret-blink text-muted">_</span>
+              </div>
+            </Link>
             <Link
               to="/sponsor"
-              className="mt-2 whitespace-nowrap border border-line px-2 py-1 text-xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg"
+              className="mt-2 inline-flex whitespace-nowrap border border-line px-2.5 py-1 text-2xs uppercase tracking-widest text-fg hover:bg-fg hover:text-bg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-fg"
+              aria-label="Add sponsor"
             >
               add sponsor
             </Link>
-          </Link>
+          </div>
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {NAV.map((item) => (
               <Link
@@ -44,6 +48,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">{children}</main>
+      <ActivityTicker />
       <VisitorDock />
       <SponsorTicker position="bottom" />
       <footer className="border-t border-line">

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import type { MatchResult, Model, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
 import { cn } from "@/lib/utils";
+import { SimilarRigsStrip } from "./activity-ticker";
 
 function FitBadge({ fit }: { fit: ModelFit["fit"] }) {
   const label = fit === "gpu" ? "fits GPU" : fit === "hybrid" ? "offload" : fit === "cpu" ? "CPU" : "exceeds";
@@ -140,22 +141,67 @@ function QuantAdvisor({ model, quants, vramGb }: { model: Model; quants: QuantOp
   );
 }
 
+function SavingsVsApi({ result }: { result: MatchResult }) {
+  const [tokensPerDay, setTokensPerDay] = useState(120_000);
+  const pricePerM = 5; // blended $5 / 1M vs GPT-4o class
+  const monthlyTokens = tokensPerDay * 30;
+  const monthlyCostApi = (monthlyTokens / 1_000_000) * pricePerM;
+  const yearly = monthlyCostApi * 12;
+  return (
+    <div className="mt-6 border border-emerald-900/30 bg-emerald-950/15 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-2xs uppercase tracking-[0.24em] text-emerald-400">value prop · save vs cloud</div>
+        <span className="border border-emerald-900/40 bg-emerald-950/30 px-2 py-1 font-mono text-2xs text-emerald-300">local = $0 after hardware</span>
+      </div>
+      <div className="mt-3 grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
+        <div>
+          <div className="text-sm text-fg">At <span className="font-mono font-semibold">{(tokensPerDay/1000).toFixed(0)}k</span> tokens/day, you save <span className="font-semibold text-emerald-400">${monthlyCostApi.toFixed(0)}/mo</span> vs API · <span className="text-muted">${yearly.toFixed(0)}/yr</span></div>
+          <p className="mt-1 text-xs leading-relaxed text-muted">Assumes GPT-4o-class pricing (~${pricePerM}/1M blended). Local inference is private, offline, and uncapped after the rig.</p>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="text-2xs uppercase tracking-widest text-dim">tokens/day</span>
+            <input type="range" min={20_000} max={500_000} step={10_000} value={tokensPerDay} onChange={e=> setTokensPerDay(Number(e.target.value))} className="flex-1 accent-emerald-500" />
+            <span className="font-mono text-xs text-fg w-[72px] text-right">{(tokensPerDay/1000).toFixed(0)}k</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="border border-line bg-bg p-2">
+            <div className="text-2xs uppercase tracking-widest text-dim">vs API/mo</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-emerald-400">${monthlyCostApi.toFixed(0)}</div>
+          </div>
+          <div className="border border-line bg-bg p-2">
+            <div className="text-2xs uppercase tracking-widest text-dim">vs API/yr</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-fg">${yearly.toFixed(0)}</div>
+          </div>
+          <div className="border border-line bg-bg p-2">
+            <div className="text-2xs uppercase tracking-widest text-dim">privacy</div>
+            <div className="mt-1 text-2xs font-semibold uppercase tracking-widest text-fg">100% local</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UpgradePath({ result }: { result: MatchResult }) {
   const top = result.picks[0];
   if (!top || top.fit === "gpu") return null;
   const upgradeVram = top.quant.vramGb;
+  const need = Math.max(0, upgradeVram - result.specs.vramGb);
+  const price = 320; // avg used 24GB
+  const savingPerMo = 42; // at 120k/day
+  const payback = (price / savingPerMo).toFixed(1);
   return (
     <div className="mt-8 border border-warning/30 bg-warning/5 p-6 sm:p-8">
-      <div className="text-2xs uppercase tracking-widest text-warning">feature: upgrade path</div>
+      <div className="text-2xs uppercase tracking-widest text-warning">upgrade path · value math</div>
       <h3 className="mt-2 text-xl font-semibold text-fg">
-        Add ~{upgradeVram - result.specs.vramGb}GB VRAM to run {top.model.name}
+        Add ~{need}GB VRAM to run {top.model.name}
       </h3>
       <p className="mt-2 text-sm text-muted leading-relaxed">
         {top.model.name} wants {top.quant.vramGb}GB ({top.quant.name}). Your rig has {result.specs.vramGb}GB.
-        A used RTX 3090 24GB (~$300) or RTX 4070 12GB (~$400) would unlock this model.
+        A used RTX 3090 24GB (~${price}) would unlock this model — pays for itself in <span className="font-semibold text-fg">{payback} months</span> vs API at 120k tokens/day (~${savingPerMo}/mo saved).
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">RTX 3090 24GB · ~$300 used</span>
+        <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">RTX 3090 24GB · ~$300 used · {payback}mo payback</span>
         <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">RTX 4070 12GB · ~$400</span>
         <span className="border border-line px-3 py-1 text-2xs uppercase tracking-widest text-muted">M4 Pro 24GB · ~$600</span>
       </div>
@@ -200,6 +246,135 @@ function CommunityConsensus({ specs }: { specs: Specs }) {
             <p className="mt-2 text-xs text-muted leading-relaxed">{c.reason}</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function DistributionLoop({ result }: { result: MatchResult }) {
+  const [unlocked, setUnlocked] = useState(false);
+  const [certCopied, setCertCopied] = useState<string | null>(null);
+  const certRef = useRef<HTMLCanvasElement | null>(null);
+  const s = result.specs;
+  const top = result.picks[0];
+  const shareUrl = useMemo(()=> {
+    const p=new URLSearchParams({gpu:s.gpu, vram:String(s.vramGb), ram:String(s.ramGb), cpu:s.cpu, os:s.os, unified:s.unified?"1":"0", gpus:String(s.gpuCount||1), ctx:String(result.contextK??8)});
+    return `https://whatcanirun.dev/share?${p.toString()}`;
+  },[s, result.contextK]);
+  const tweet = top ? `My ${s.gpu} runs ${top.model.name} at ${top.tokPerSec||top.speed} (${top.quant.name}) — check your rig at whatcanirun.dev` : `Check what your rig can run`;
+
+  useEffect(()=>{
+    try{ if(localStorage.getItem("whatcanirun_shared")==="1") setUnlocked(true);}catch{}
+  },[]);
+  const markShared = () => {
+    try{ localStorage.setItem("whatcanirun_shared","1"); }catch{}
+    setUnlocked(true);
+  };
+  useEffect(()=>{
+    const c=certRef.current; if(!c||!top) return;
+    const ctx=c.getContext("2d"); if(!ctx) return;
+    const W=900, H=520; c.width=W; c.height=H;
+    ctx.fillStyle="#0a0a0a"; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="#CC8800"; ctx.lineWidth=4; ctx.strokeRect(20,20,W-40,H-40);
+    ctx.fillStyle="#111111"; ctx.fillRect(24,24,W-48,H-48);
+    // subtle grid
+    ctx.strokeStyle="#1e1e1e"; ctx.lineWidth=1;
+    for(let x=24;x<W;x+=32){ ctx.beginPath(); ctx.moveTo(x,24); ctx.lineTo(x,H-24); ctx.stroke(); }
+    // header
+    ctx.fillStyle="#CC8800"; ctx.font="bold 11px JetBrains Mono"; ctx.fillText("CERTIFICATE OF COMPATIBILITY  ·  WHAT CAN I RUN?  ·  VERIFIED LOCAL INFERENCE", 48, 68);
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(48,84); ctx.lineTo(W-48,84); ctx.stroke();
+    // title
+    ctx.fillStyle="#f0f0f0"; ctx.font="bold 30px Chakra Petch"; ctx.fillText("CERTIFIED  —  IT RUNS",48,132);
+    ctx.fillStyle="#16A34A"; ctx.font="bold 22px Chakra Petch"; ctx.fillText(`✓  ${top.model.name}`, 380,132);
+    // rig
+    const rig = s.unified ? `${s.ramGb}GB Unified · ${s.gpu}` : `${s.gpuCount>1?`${s.gpuCount}x `:''}${s.gpu} · ${s.vramGb * Math.max(1,s.gpuCount||1)}GB VRAM`;
+    ctx.fillStyle="#8c8c8c"; ctx.font="13px JetBrains Mono"; ctx.fillText(rig,48,164);
+    ctx.fillStyle="#f0f0f0"; ctx.font="13px JetBrains Mono"; ctx.fillText(`${s.ramGb}GB RAM · ${s.os} · ${s.cpu} · ${result.contextK??8}k ctx`,48,186);
+    // divider
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(48,212); ctx.lineTo(W-48,212); ctx.stroke();
+    // metrics
+    ctx.fillStyle="#CC8800"; ctx.font="bold 11px JetBrains Mono"; ctx.fillText("METRICS",48,238);
+    const metrics = [
+      ["MODEL", top.model.name],
+      ["QUANT", `${top.quant.name} · ${top.quant.vramGb}GB`],
+      ["SPEED", `${top.tokPerSec||top.speed} · ${top.fit.toUpperCase()}`],
+      ["QUALITY", `${top.model.quality}/100 · ${top.model.license}`],
+    ];
+    let y=266;
+    metrics.forEach(([k,v])=>{
+      ctx.fillStyle="#5c5c5c"; ctx.font="11px JetBrains Mono"; ctx.fillText(k,48,y);
+      ctx.fillStyle="#f0f0f0"; ctx.font="13px JetBrains Mono"; ctx.fillText(v,180,y);
+      y+=26;
+    });
+    // stamp
+    ctx.save();
+    ctx.translate(W-190, 150);
+    ctx.rotate(-0.18);
+    ctx.strokeStyle="#16A34A"; ctx.lineWidth=3;
+    ctx.strokeRect(-86,-42,172,84);
+    ctx.fillStyle="#16A34A"; ctx.font="bold 18px Chakra Petch"; ctx.textAlign="center"; ctx.fillText("VERIFIED",0,-8);
+    ctx.font="11px JetBrains Mono"; ctx.fillText(`${top.quant.name}  ·  LOCAL`,0,18);
+    ctx.restore();
+    ctx.textAlign="start";
+    // footer
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(48,H-78); ctx.lineTo(W-48,H-78); ctx.stroke();
+    ctx.fillStyle="#5c5c5c"; ctx.font="11px JetBrains Mono"; ctx.fillText("whatcanirun.dev  ·  private · offline · no cloud bill  ·  share this certificate",48,H-48);
+    ctx.fillStyle="#CC8800"; ctx.font="bold 12px JetBrains Mono"; ctx.fillText("OPEN WEIGHTS × HARDWARE",W-230,H-48);
+  },[s, top, result.contextK]);
+
+  const copy = async (text:string, key:string)=>{
+    try{ await navigator.clipboard.writeText(text);}catch{
+      const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setCertCopied(key); setTimeout(()=> setCertCopied(null),1600);
+  };
+  const downloadCert = ()=>{
+    const c=certRef.current; if(!c) return;
+    const a=document.createElement("a"); a.download=`whatcanirun-certificate-${s.gpu.replace(/\s+/g,"_")}.png`; a.href=c.toDataURL("image/png"); a.click(); setCertCopied("dl"); setTimeout(()=> setCertCopied(null),1600); markShared();
+  };
+  const copyCertImage = async ()=>{
+    const c=certRef.current; if(!c) return;
+    try{
+      const blob: Blob|null = await new Promise(res=> c.toBlob(r=>res(r)));
+      if(!blob) throw new Error("no blob");
+      // @ts-ignore
+      const item=new window.ClipboardItem({"image/png":blob});
+      // @ts-ignore
+      await navigator.clipboard.write([item]);
+      setCertCopied("img"); setTimeout(()=> setCertCopied(null),1600); markShared();
+    }catch{ downloadCert(); }
+  };
+
+  if(!top) return null;
+  return (
+    <div className="mt-10 border border-line bg-surface p-4 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-2xs uppercase tracking-[0.28em] text-primary">frictionless share · distribution loop</div>
+          <h3 className="mt-1 text-lg font-medium">found this useful? share your rig — unlock early drops</h3>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">Every share brings another builder. Share now and you’ll be first to hear about new GGUFs that fit your rig.</p>
+        </div>
+        {unlocked ? <span className="border border-emerald-900/40 bg-emerald-950/20 px-3 py-1 text-2xs uppercase tracking-widest text-emerald-300">✓ early access unlocked</span> : <span className="border border-line bg-bg px-3 py-1 text-2xs uppercase tracking-widest text-muted">share to unlock</span>}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.25fr_0.9fr]">
+        <div className="overflow-hidden border border-line bg-black p-2">
+          <canvas ref={certRef} className="h-auto w-full" style={{aspectRatio:"900/520"}} aria-label="Compatibility certificate" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" onClick={markShared} className="min-h-11 inline-flex items-center justify-center bg-fg px-3 text-2xs uppercase tracking-widest text-bg hover:opacity-90">↗ share on X</a>
+            <a href={`https://www.reddit.com/r/LocalLLaMA/submit?title=${encodeURIComponent(`My ${s.gpu} runs ${top.model.name} — ${top.model.summary.split(".")[0]}`)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" onClick={markShared} className="min-h-11 inline-flex items-center justify-center border border-orange-600/40 bg-orange-950/20 px-3 text-2xs uppercase tracking-widest text-orange-300 hover:bg-orange-900/30">↗ reddit</a>
+            <button type="button" onClick={()=> { copy(shareUrl,"url"); markShared(); }} className="min-h-11 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{certCopied==="url"?"✓ link copied":"copy link"}</button>
+            <button type="button" onClick={()=> { copy(tweet+" "+shareUrl,"txt"); markShared(); }} className="min-h-11 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{certCopied==="txt"?"✓ copied":"copy tweet"}</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={copyCertImage} className="min-h-11 border border-fg bg-fg px-3 text-2xs uppercase tracking-widest text-bg hover:opacity-90">{certCopied==="img"?"✓ image copied":"copy certificate"}</button>
+            <button type="button" onClick={downloadCert} className="min-h-11 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{certCopied==="dl"?"✓ downloaded":"download png"}</button>
+          </div>
+          <p className="text-2xs leading-relaxed text-dim">No signup. Sharing stores a local flag only — we’ll prioritize watchers who shared for early GGUF alerts. No spam.</p>
+          {unlocked ? <div className="border border-emerald-900/30 bg-emerald-950/10 px-3 py-2 text-xs text-emerald-300">You’re on the early list. New GGUFs ≤ your VRAM will ping you first.</div> : null}
+        </div>
       </div>
     </div>
   );
@@ -407,6 +582,126 @@ function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number;
   );
 }
 
+function ViralityShareStrip({ result }: { result: MatchResult }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const s = result.specs;
+  const top = result.picks[0];
+  const shareUrl = useMemo(() => {
+    const p = new URLSearchParams({ gpu: s.gpu, vram: String(s.vramGb), ram: String(s.ramGb), cpu: s.cpu, os: s.os, unified: s.unified ? "1":"0", gpus: String(s.gpuCount||1), ctx: String(result.contextK??8)});
+    return `https://whatcanirun.dev/share?${p.toString()}`;
+  }, [s, result.contextK]);
+  const tweetText = top ? `My ${s.gpu} runs ${top.model.name} at ${top.tokPerSec || top.speed} — ${top.quant.name} · ${top.quant.vramGb}GB. Check what your rig can run:` : `Check what your rig can run at whatcanirun.dev`;
+  const badgeMd = top ? `![${top.model.name} on ${s.gpu}](${shareUrl}) — My ${s.gpu} runs **${top.model.name}** at ${top.tokPerSec||top.speed} (${top.quant.name}, ${top.quant.vramGb}GB) via whatcanirun.dev` : shareUrl;
+
+  useEffect(()=> {
+    const canvas = canvasRef.current;
+    if(!canvas || !top) return;
+    const ctx = canvas.getContext("2d");
+    if(!ctx) return;
+    const W=800, H=420;
+    canvas.width=W; canvas.height=H;
+    // bg
+    ctx.fillStyle="#0a0a0a"; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="#CC8800"; ctx.lineWidth=3; ctx.strokeRect(18,18,W-36,H-36);
+    ctx.fillStyle="#111111"; ctx.fillRect(22,22,W-44,H-44);
+    // grid
+    ctx.strokeStyle="#2a2a2a"; ctx.lineWidth=1;
+    for(let x=22;x<W;x+=28){ ctx.beginPath(); ctx.moveTo(x,22); ctx.lineTo(x,H-22); ctx.stroke(); }
+    for(let y=22;y<H;y+=28){ ctx.beginPath(); ctx.moveTo(22,y); ctx.lineTo(W-22,y); ctx.stroke(); }
+    // header
+    ctx.fillStyle="#CC8800"; ctx.font="bold 13px JetBrains Mono"; ctx.fillText("⚡ WHAT CAN I RUN?  //  RIG SCORE CARD", 42, 62);
+    ctx.fillStyle="#8c8c8c"; ctx.font="11px JetBrains Mono"; ctx.fillText("whatcanirun.dev · open weights × hardware", W-280,62);
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(42,78); ctx.lineTo(W-42,78); ctx.stroke();
+    // rig line
+    const rigLine = s.unified ? `${s.ramGb}GB Unified · ${s.gpu}` : `${s.gpuCount>1?`${s.gpuCount}x `:''}${s.gpu} · ${s.vramGb * Math.max(1,s.gpuCount||1)}GB VRAM · ${s.ramGb}GB RAM`;
+    ctx.fillStyle="#f0f0f0"; ctx.font="bold 22px Chakra Petch"; ctx.fillText(rigLine.slice(0,48),42,118);
+    ctx.fillStyle="#8c8c8c"; ctx.font="13px JetBrains Mono"; ctx.fillText(`${s.os} · ${s.cpu} · ${result.contextK??8}k ctx · ~${top?.bandwidthGbS||900} GB/s`,42,142);
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(42,162); ctx.lineTo(W-42,162); ctx.stroke();
+    // verdict
+    const fits = top.fit!=="no";
+    ctx.fillStyle = fits ? "#16A34A" : "#c4c4c4"; ctx.font="bold 28px Chakra Petch"; ctx.fillText(fits?"✓ RUNS":"✗ TOO HEAVY",42,208);
+    ctx.fillStyle="#f0f0f0"; ctx.font="bold 18px Chakra Petch"; ctx.fillText(top.model.name, 190,208);
+    ctx.fillStyle="#8c8c8c"; ctx.font="12px JetBrains Mono"; ctx.fillText(`${top.quant.name} · ${top.quant.vramGb}GB · quality ${top.model.quality}/100 · ${top.tokPerSec||top.speed}`,42,232);
+    // top 3 mini
+    let y=272;
+    ctx.fillStyle="#CC8800"; ctx.font="bold 11px JetBrains Mono"; ctx.fillText("TOP RUNNABLE",42,y);
+    y+=22;
+    result.picks.slice(0,3).forEach((p,i)=>{
+      ctx.fillStyle = i===0?"rgba(204,136,0,0.12)":"rgba(255,255,255,0.04)"; ctx.fillRect(38,y-14,W-76,28);
+      ctx.fillStyle="#f0f0f0"; ctx.font="12px JetBrains Mono"; ctx.fillText(`${i+1}. ${p.model.name}`,46,y+4);
+      ctx.fillStyle="#CC8800"; ctx.font="bold 11px JetBrains Mono"; ctx.fillText(p.quant.name, 320,y+4);
+      ctx.fillStyle="#8c8c8c"; ctx.font="11px JetBrains Mono"; ctx.fillText(`${p.quant.vramGb}GB  ${p.tokPerSec||p.speed}`, 420,y+4);
+      ctx.fillStyle= p.fit==="gpu" ? "#16A34A" : "#8c8c8c"; ctx.fillText(p.fit==="gpu"?"FITS GPU":"OFFLOAD", 640,y+4);
+      y+=32;
+    });
+    // footer
+    ctx.strokeStyle="#2a2a2a"; ctx.beginPath(); ctx.moveTo(42,H-58); ctx.lineTo(W-42,H-58); ctx.stroke();
+    ctx.fillStyle="#5c5c5c"; ctx.font="11px JetBrains Mono"; ctx.fillText("local inference · no cloud bill · private & offline",42,H-36);
+    ctx.fillStyle="#CC8800"; ctx.font="bold 12px JetBrains Mono"; ctx.fillText("whatcanirun.dev",W-150,H-36);
+  }, [s, top, result.picks, result.contextK]);
+
+  const copy = async (text:string, key:string) => {
+    try{ await navigator.clipboard.writeText(text);}catch{
+      const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setCopied(key); setTimeout(()=>setCopied(null),1600);
+  };
+  const download = () => {
+    const c=canvasRef.current; if(!c) return;
+    const a=document.createElement("a"); a.download=`rig-score-${s.gpu.replace(/\s+/g,"_")}.png`; a.href=c.toDataURL("image/png"); a.click(); setCopied("dl"); setTimeout(()=>setCopied(null),1600);
+  };
+  const copyImage = async () => {
+    const c=canvasRef.current; if(!c) return;
+    try{
+      const blob: Blob | null = await new Promise(res=> c.toBlob(r=>res(r)));
+      if(!blob) throw new Error("no blob");
+      // @ts-ignore
+      const item = new window.ClipboardItem({"image/png": blob});
+      // @ts-ignore
+      await navigator.clipboard.write([item]);
+      setCopied("img"); setTimeout(()=>setCopied(null),1600);
+    }catch{ download(); }
+  };
+
+  if(!top) return null;
+  return (
+    <div className="mt-8 border border-primary/20 bg-surface p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-2xs uppercase tracking-[0.28em] text-primary">virality · rig score card</div>
+          <h3 className="mt-1 text-lg font-medium">shareable badge — built for screenshots</h3>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">Looks crisp on X/Twitter, Reddit and Discord. Designed to be screenshotted or copied as an image — turns every result into distribution.</p>
+        </div>
+        <span className="border border-line bg-bg px-2 py-1 font-mono text-2xs text-muted">800×420 · auto-generated</span>
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_0.85fr]">
+        <div className="overflow-hidden border border-line bg-black p-2">
+          <canvas ref={canvasRef} className="h-auto w-full" style={{aspectRatio:"800/420"}} aria-label="Rig score card preview" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="border border-line bg-bg p-3">
+            <div className="text-2xs uppercase tracking-widest text-dim">your badge copy</div>
+            <div className="mt-2 font-mono text-xs leading-relaxed text-fg break-words">{badgeMd.slice(0,160)}…</div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={copyImage} className="min-h-10 border border-fg bg-fg px-3 text-2xs uppercase tracking-widest text-bg hover:opacity-90">{copied==="img"?"✓ copied image":"copy image"}</button>
+            <button type="button" onClick={download} className="min-h-10 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{copied==="dl"?"✓ downloaded":"download png"}</button>
+            <button type="button" onClick={()=> copy(badgeMd,"md")} className="min-h-10 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{copied==="md"?"✓ copied":"copy badge md"}</button>
+            <button type="button" onClick={()=> copy(shareUrl,"url")} className="min-h-10 border border-line px-3 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg">{copied==="url"?"✓ link copied":"copy link"}</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" className="min-h-10 inline-flex items-center justify-center border border-primary/40 bg-primary/10 px-3 text-center text-2xs uppercase tracking-widest text-primary hover:bg-primary hover:text-white">↗ tweet rig</a>
+            <a href={`https://www.reddit.com/r/LocalLLaMA/submit?title=${encodeURIComponent(`My ${s.gpu} runs ${top.model.name} — fit report`)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" className="min-h-10 inline-flex items-center justify-center border border-orange-600/30 bg-orange-950/20 px-3 text-center text-2xs uppercase tracking-widest text-orange-300 hover:bg-orange-900/30">↗ reddit</a>
+          </div>
+          <a href={`/share?${new URLSearchParams({gpu:s.gpu, vram:String(s.vramGb), ram:String(s.ramGb), cpu:s.cpu, os:s.os, unified:s.unified?"1":"0", gpus:String(s.gpuCount||1), ctx:String(result.contextK??8)}).toString()}`} className="text-center text-2xs uppercase tracking-widest text-muted underline underline-offset-4 hover:text-fg">open full share studio →</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VerdictBanner({ result }: { result: MatchResult }) {
   const top = result.picks[0];
   if (!top) return null;
@@ -511,6 +806,10 @@ export function MatchResults({
 
         <VerdictBanner result={result} />
 
+        <ViralityShareStrip result={result} />
+
+        <SavingsVsApi result={result} />
+
         {/* Feature 2: License filter */}
         <div className="mt-6 flex items-center gap-3">
           <button
@@ -573,8 +872,12 @@ export function MatchResults({
       {/* Feature 6: Benchmark compare */}
       <BenchmarkCompare result={result} />
 
+      <SimilarRigsStrip specs={s} />
+
       {/* Feature 5: Community consensus */}
       <CommunityConsensus specs={s} />
+
+      <DistributionLoop result={result} />
     </section>
   );
 }

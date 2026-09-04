@@ -2,6 +2,14 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import type { MatchResult, Model, ModelFit, QuantOption, RunnerType, Specs } from "@/lib/models/types";
 import { cn } from "@/lib/utils";
 import { SimilarRigsStrip } from "./activity-ticker";
+import { VramBar, QuantGlossary, MethodologyNote } from "./vram-math";
+
+function siteUrl() {
+  try {
+    if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
+  } catch { /* ssr */ }
+  return "https://myllmstack.vercel.app";
+}
 
 function FitBadge({ fit }: { fit: ModelFit["fit"] }) {
   const label = fit === "gpu" ? "fits GPU" : fit === "hybrid" ? "offload" : fit === "cpu" ? "CPU" : "exceeds";
@@ -259,9 +267,9 @@ function DistributionLoop({ result }: { result: MatchResult }) {
   const top = result.picks[0];
   const shareUrl = useMemo(()=> {
     const p=new URLSearchParams({gpu:s.gpu, vram:String(s.vramGb), ram:String(s.ramGb), cpu:s.cpu, os:s.os, unified:s.unified?"1":"0", gpus:String(s.gpuCount||1), ctx:String(result.contextK??8)});
-    return `https://whatcanirun.dev/share?${p.toString()}`;
+    return `${siteUrl()}/share?${p.toString()}`;
   },[s, result.contextK]);
-  const tweet = top ? `My ${s.gpu} runs ${top.model.name} at ${top.tokPerSec||top.speed} (${top.quant.name}) — check your rig at whatcanirun.dev` : `Check what your rig can run`;
+  const tweet = top ? `My ${s.gpu} runs ${top.model.name} at ${top.tokPerSec||top.speed} (${top.quant.name}) — check your rig: ${shareUrl}` : `Check what your rig can run: ${shareUrl}`;
 
   useEffect(()=>{
     try{ if(localStorage.getItem("whatcanirun_shared")==="1") setUnlocked(true);}catch{}
@@ -541,6 +549,8 @@ function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number;
         {fit.why}
       </p>
 
+      <VramBar fit={fit} capacityGb={specs.unified ? specs.ramGb * 0.72 : Math.max(1, specs.vramGb * Math.max(1, specs.gpuCount || 1))} />
+
       {/* Multi-Engine Runner Switcher */}
       <div className="mt-4">
         <div className="flex items-center justify-between text-2xs uppercase tracking-widest text-dim mb-1.5">
@@ -589,10 +599,10 @@ function ViralityShareStrip({ result }: { result: MatchResult }) {
   const top = result.picks[0];
   const shareUrl = useMemo(() => {
     const p = new URLSearchParams({ gpu: s.gpu, vram: String(s.vramGb), ram: String(s.ramGb), cpu: s.cpu, os: s.os, unified: s.unified ? "1":"0", gpus: String(s.gpuCount||1), ctx: String(result.contextK??8)});
-    return `https://whatcanirun.dev/share?${p.toString()}`;
+    return `${siteUrl()}/share?${p.toString()}`;
   }, [s, result.contextK]);
   const tweetText = top ? `My ${s.gpu} runs ${top.model.name} at ${top.tokPerSec || top.speed} — ${top.quant.name} · ${top.quant.vramGb}GB. Check what your rig can run:` : `Check what your rig can run at whatcanirun.dev`;
-  const badgeMd = top ? `![${top.model.name} on ${s.gpu}](${shareUrl}) — My ${s.gpu} runs **${top.model.name}** at ${top.tokPerSec||top.speed} (${top.quant.name}, ${top.quant.vramGb}GB) via whatcanirun.dev` : shareUrl;
+  const badgeMd = top ? `![${top.model.name} on ${s.gpu}](${shareUrl}) — My ${s.gpu} runs **${top.model.name}** at ${top.tokPerSec||top.speed} (${top.quant.name}, ${top.quant.vramGb}GB) via ${siteUrl()}` : shareUrl;
 
   useEffect(()=> {
     const canvas = canvasRef.current;
@@ -835,6 +845,9 @@ export function MatchResults({
             <PickCard key={p.model.id} fit={p} rank={i + 1} contextK={ctx} specs={s} />
           ))}
         </div>
+
+        <QuantGlossary />
+        <MethodologyNote />
 
         {also.length ? (
           <>

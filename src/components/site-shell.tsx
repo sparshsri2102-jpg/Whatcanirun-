@@ -19,12 +19,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <header className="border-b border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
           <div className="group">
-            <Link to="/" className="block">
-              <div className="text-2xs uppercase tracking-[0.28em] text-muted">open weights × hardware</div>
+            <Link to="/" className="block" aria-label="What Can I Run — home">
+              <div className="text-2xs uppercase tracking-[0.28em] text-muted">whatcanirun · open weights × hardware</div>
               <div className="mt-1 text-xl font-medium tracking-tight sm:text-2xl">
-                can i run this
+                will it run? <span className="text-primary">yes / no</span> in 15s
                 <span className="caret-blink text-muted">_</span>
               </div>
+              <div className="mt-0.5 font-mono text-2xs text-dim">no signup · RTX · Mac · AMD · laptop iGPU</div>
             </Link>
             <Link
               to="/sponsor"

@@ -17,8 +17,10 @@ if (existsSync(outputPublic)) {
 {
   const base = "https://myllmstack.vercel.app";
   const staticPaths = ["/", "/models", "/drops", "/skills", "/sponsor", "/share"];
-  const topModels = ["qwen3-8b","qwen3.5-9b","qwen3.8-27b","llama-3.3-70b","gemma3-12b","mistral-small-3.2"];
-  const topRigs = ["rtx-3060","rtx-4070","rtx-4090","m4-16","m4-max-64","8gb-laptop","rtx-5090","cpu-32"];
+  // Full matrix for impressions: every model × every rig (deduped, URL-safe)
+  // Catalog is imported via JSON-ish parse to avoid ESM/TS issues — keep lists in sync with src/lib/models/catalog.ts
+  const topModels = ["qwen3-8b","qwen3.5-9b","qwen3.8-27b","qwen3-32b","qwen3-4b","glm-5.3-flash","deepseek-r1-8b","deepseek-r1-32b","llama-4-scout","llama-3.3-70b","llama-3.2-3b","gemma3-12b","gemma3-27b","gemma3-4b","phi-4","phi-4-mini","mistral-small-3.2","devstral-small","qwen2.5-coder-32b","nemotron-3-nano","olmo-2-13b","smollm3","qwen2.5-7b","granite-3.3-8b","command-r7b","yi-9b","internvl3-8b","minicpm-v"];
+  const topRigs = ["8gb-laptop","rtx-3060","rtx-4070","rtx-4090","dual-rtx-3090","rtx-5090","m4-16","m4-pro-24","m4-max-64","studio-128","cpu-32"];
   const seoPaths = [];
   for (const m of topModels) for (const r of topRigs) seoPaths.push(`/can/${m}-on-${r}`);
   const all = [...staticPaths, ...seoPaths];

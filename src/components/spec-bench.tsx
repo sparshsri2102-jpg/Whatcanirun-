@@ -7,7 +7,32 @@ import { TerminalProcessing } from "./terminal-processing";
 import { detectSystemHardware } from "@/lib/models/detect-hardware";
 import { createWatcher } from "@/lib/server/watchers";
 import { bumpStreak, StreakBadge } from "./activity-ticker";
+import { OomFixer } from "./oom-fixer";
 import { cn } from "@/lib/utils";
+
+const POPULAR_CHECKS: Array<{ label: string; href: string; note: string }> = [
+  { label: "RTX 4060 8GB → Qwen3 8B", href: "/can/qwen3-8b-on-rtx-3060", note: "most-asked 8GB" },
+  { label: "RTX 4090 24GB → 27B all-rounder", href: "/can/qwen3.8-27b-on-rtx-4090", note: "24GB sweet spot" },
+  { label: "RTX 4070 12GB → Gemma 3 12B", href: "/can/gemma3-12b-on-rtx-4070", note: "12GB vision" },
+  { label: "Mac M4 16GB → Phi-4 Mini", href: "/can/phi-4-mini-on-m4-16", note: "unified" },
+  { label: "8GB laptop → CPU picks", href: "/can/qwen3-8b-on-8gb-laptop", note: "no GPU?" },
+  { label: "70B on dual 3090?", href: "/can/llama-3.3-70b-on-dual-rtx-3090", note: "48GB stacking" },
+];
+
+function loadHistory(): Specs[] {
+  try {
+    const raw = localStorage.getItem("whatcanirun_history");
+    const arr = raw ? (JSON.parse(raw) as Specs[]) : [];
+    return Array.isArray(arr) ? arr.filter((s) => s && typeof s.vramGb === "number").slice(0, 5) : [];
+  } catch { return []; }
+}
+function pushHistory(specs: Specs) {
+  try {
+    const prev = loadHistory().filter((s) => s.gpu !== specs.gpu || s.vramGb !== specs.vramGb || s.ramGb !== specs.ramGb);
+    localStorage.setItem("whatcanirun_history", JSON.stringify([specs, ...prev].slice(0, 5)));
+    window.dispatchEvent(new Event("whatcanirun:history"));
+  } catch { /* ignore */ }
+}
 
 const TASKS: Array<{ id: ModelTask | "any"; label: string }> = [
   { id: "any", label: "anything" },
@@ -76,10 +101,14 @@ export function SpecBench() {
   const [activeSummary, setActiveSummary] = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const [history, setHistory] = useState<Specs[]>([]);
 
   // Load last active specs on mount if present
   useEffect(() => {
     try {
+      setHistory(loadHistory());
+      const onHist = () => setHistory(loadHistory());
+      window.addEventListener("whatcanirun:history", onHist);
       const saved = localStorage.getItem("whatcanirun_last_specs");
       if (saved) {
         const specs = JSON.parse(saved) as Specs;
@@ -100,6 +129,7 @@ export function SpecBench() {
           });
         }
       }
+      return () => window.removeEventListener("whatcanirun:history", onHist);
     } catch {
       /* ignore */
     }
@@ -109,6 +139,8 @@ export function SpecBench() {
     if (result && !busy) {
       try {
         localStorage.setItem("whatcanirun_last_specs", JSON.stringify(result.specs));
+        pushHistory(result.specs);
+        setHistory(loadHistory());
       } catch {
         /* ignore */
       }
@@ -382,6 +414,25 @@ export function SpecBench() {
         </div>
       ) : null}
 
+      {/* Repeat loop: last rigs, one click */}
+      {history.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 border border-line bg-surface px-3 py-2">
+          <span className="text-2xs uppercase tracking-widest text-dim">your recent rigs:</span>
+          {history.map((h, i) => (
+            <button
+              key={`${h.gpu}-${h.vramGb}-${i}`}
+              type="button"
+              onClick={() => run({ preset: { ...h, source: "preset" } })}
+              className="border border-line bg-bg px-2.5 py-1 font-mono text-2xs text-muted hover:border-fg hover:text-fg"
+              title={`${h.gpu} · ${h.vramGb}GB VRAM · ${h.ramGb}GB RAM`}
+            >
+              {h.gpuCount > 1 && !h.unified ? `${h.gpuCount}x ` : ""}{h.gpu} · {h.unified ? `${h.ramGb}U` : `${h.vramGb}GB`}
+            </button>
+          ))}
+          <span className="text-2xs text-dim">saved on this device only</span>
+        </div>
+      ) : null}
+
       {/* Task & Context selector filters */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -560,6 +611,37 @@ export function SpecBench() {
           <WatcherCTA specs={result.specs} />
         </div>
       ) : null}
+
+      <OomFixer />
+
+      {/* Search-intent hub: popular checks (internal links for impressions) */}
+      <div className="mt-10 border border-line bg-surface p-4 sm:p-5">
+        <div className="text-2xs uppercase tracking-[0.24em] text-muted">popular checks · answered in 15s</div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {POPULAR_CHECKS.map((c) => (
+            <a key={c.href} href={c.href} className="group border border-line bg-bg px-3 py-2.5 hover:border-fg">
+              <span className="block text-xs font-medium text-fg group-hover:underline">{c.label}</span>
+              <span className="mt-0.5 block font-mono text-2xs text-dim">{c.note} →</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Beginner FAQ (SEO + bounce killer) */}
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <div className="border border-line bg-bg p-4">
+          <div className="text-xs font-semibold text-fg">Do I need a GPU?</div>
+          <p className="mt-1 text-xs leading-relaxed text-muted">No — but GPU = fast. CPU runs 3B models at 5–15 t/s (usable, not snappy). 8GB VRAM is the 2026 floor for 7B chat.</p>
+        </div>
+        <div className="border border-line bg-bg p-4">
+          <div className="text-xs font-semibold text-fg">Why did my model OOM?</div>
+          <p className="mt-1 text-xs leading-relaxed text-muted">Almost always KV cache, not weights. Long context eats GBs. Use the OOM fixer above: unload, cap layers, cut to 2k ctx.</p>
+        </div>
+        <div className="border border-line bg-bg p-4">
+          <div className="text-xs font-semibold text-fg">Q4 or Q8?</div>
+          <p className="mt-1 text-xs leading-relaxed text-muted">Start Q4_K_M. Bigger model at Q4 beats smaller at Q8. Go Q5/Q8 only if Q4 fits with 2GB+ to spare.</p>
+        </div>
+      </div>
     </div>
   );
 }

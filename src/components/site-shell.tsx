@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { SponsorTicker } from "./sponsor-ticker";
 import { VisitorDock } from "./visitor-dock";
 import { ActivityTicker } from "./activity-ticker";
 
@@ -15,7 +14,6 @@ const NAV = [
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-bg text-fg flex flex-col">
-      <SponsorTicker position="top" />
       <header className="border-b border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
           <div className="group">
@@ -51,10 +49,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">{children}</main>
       <ActivityTicker />
       <VisitorDock />
-      <SponsorTicker position="bottom" />
       <footer className="border-t border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-2xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>no account for visitors · companies sponsor the tape</span>
+          <span>no account for visitors · open weights only</span>
           <span>estimates · Q4/Q5/Q8 GGUF · leave ~10% VRAM for KV cache</span>
         </div>
       </footer>

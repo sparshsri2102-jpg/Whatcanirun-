@@ -497,23 +497,36 @@ function PickCard({ fit, rank, contextK, specs }: { fit: ModelFit; rank: number;
             {fit.quantOptions.map((opt) => {
               const isSelected = opt.quant.name === currentQuant.name;
               const isGpu = opt.fit === "gpu";
+              const noFit = opt.fit === "no";
               return (
                 <button
                   key={opt.quant.name}
                   type="button"
+                  disabled={noFit}
+                  title={noFit ? `needs ~${opt.totalNeededGb} GB — exceeds this rig` : undefined}
                   onClick={() => setSelectedQuantName(opt.quant.name)}
                   className={cn(
                     "px-2.5 py-1 text-2xs uppercase tracking-wider border transition-colors",
                     isSelected
                       ? "border-fg bg-fg text-bg"
-                      : isGpu
-                        ? "border-line bg-bg text-fg hover:border-fg"
-                        : "border-line/60 bg-transparent text-dim hover:text-muted"
+                      : noFit
+                        ? "border-line/40 bg-transparent text-dim/60 cursor-not-allowed line-through"
+                        : isGpu
+                          ? "border-line bg-bg text-fg hover:border-fg"
+                          : "border-line/60 bg-transparent text-dim hover:text-muted"
                   )}
                 >
                   {opt.quant.name} · {opt.quant.vramGb} GB
                   <span className="ml-1 opacity-70">
-                    ({opt.fit === "gpu" ? "GPU" : opt.fit === "hybrid" ? "offload" : "CPU"})
+                    (
+                    {opt.fit === "gpu"
+                      ? "GPU"
+                      : opt.fit === "hybrid"
+                        ? "offload"
+                        : opt.fit === "cpu"
+                          ? "CPU"
+                          : "no fit"}
+                    )
                   </span>
                 </button>
               );

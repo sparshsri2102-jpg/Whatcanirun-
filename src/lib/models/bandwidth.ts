@@ -98,11 +98,20 @@ export function getActiveParamsB(model: Model): number {
   if (model.id.includes("deepseek-r1") || model.id.includes("deepseek-v3")) {
     return 37; // 37B active parameters out of 671B total
   }
+  if (model.id.includes("deepseek-v4-flash")) {
+    return 13; // 13B active out of 284B total (official README)
+  }
+  if (model.id.includes("deepseek-v4-pro")) {
+    return 49; // 49B active out of 1.6T total (official README)
+  }
   if (model.id.includes("mixtral-8x7b") || model.name.toLowerCase().includes("8x7b")) {
     return 12.8; // 2 experts active out of 8
   }
   if (model.id.includes("mixtral-8x22b") || model.name.toLowerCase().includes("8x22b")) {
     return 39;
+  }
+  if (model.id.includes("qwen3.8-flash-next")) {
+    return 6; // 6B active out of 180B total (official README)
   }
   if (model.id.includes("qwen") && model.moe) {
     return Math.max(3, Math.round(model.paramsB * 0.25));

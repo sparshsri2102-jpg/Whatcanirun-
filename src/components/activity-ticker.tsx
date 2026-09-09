@@ -72,7 +72,7 @@ export function SimilarRigsStrip({ specs }: { specs: import("@/lib/models/types"
   if (vram <= 8) suggestion = ["Phi-4 Mini Q8 — CPU king", "Gemma 3 4B Q4 — phone-class", "Qwen3 8B Q4 — 22 t/s"];
   else if (vram <= 16) suggestion = ["Mistral Small 3.2 Q4 — 16GB sweet spot", "Qwen3 8B Q5 — sharper", "Gemma 3 12B Q4 — vision"];
   else if (vram <= 32) suggestion = ["Qwen3.8 27B Q4 — all-rounder", "DeepSeek-R1 32B Q4 — reasoner", "Gemma 3 27B Q4 — vision 27B"];
-  else suggestion = ["GLM-5.3 Flash IQ2 — MoE frontier", "Llama 3.3 70B Q4 — 70B workhorse", "DeepSeek-V4 Flash Q4 — 256k agentic"];
+  else suggestion = ["GLM-5.3 Flash IQ2 — MoE frontier", "Llama 3.3 70B Q4 — 70B workhorse", "DeepSeek-V4 Flash IQ2 — 1M ctx MoE"];
   return (
     <div className="mt-6 border border-line bg-surface p-4">
       <div className="text-2xs uppercase tracking-[0.24em] text-muted">similar rigs also checked</div>

@@ -90,7 +90,7 @@ function evaluateQuant(quant: Quant, model: Model, specs: Specs, contextK: numbe
   };
 }
 
-function bestQuant(model: Model, specs: Specs, contextK: number): {
+export function bestQuant(model: Model, specs: Specs, contextK: number): {
   quant: Quant;
   fit: FitKind;
   headroomGb: number;

@@ -50,6 +50,10 @@ export const Route = createRootRoute({
         <AuthProvider>
           <Outlet />
         </AuthProvider>
+        {/* Vercel Web Analytics — page-view tracking for the live deployment.
+            Same script the @vercel/analytics package injects; inlined as a tag
+            so no extra dependency is needed. View counts in Vercel dashboard → Analytics. */}
+        <script defer src="https://va.vercel-scripts.com/v1/script.js" />
         <Scripts />
       </body>
     </html>

@@ -239,6 +239,14 @@ function SkillsPage() {
                       {s.name}
                     </a>
                     <span className="text-xs text-muted">· {s.repo}</span>
+                    {s.fresh ? (
+                      <span
+                        className="border border-fg bg-fg px-1.5 py-0.5 text-2xs text-bg"
+                        title={`Published ${s.repoCreatedAt ?? "in the last 30 days"}`}
+                      >
+                        fresh &lt;30d
+                      </span>
+                    ) : null}
                     {s.matchReason ? (
                       <span className="border border-line bg-surface px-1.5 py-0.5 text-2xs text-fg">
                         {s.matchReason}

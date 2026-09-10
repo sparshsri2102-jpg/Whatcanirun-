@@ -1,5 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { searchLocalSkills, type Skill, type MatchScoredSkill } from "@/lib/skills/catalog";
+import {
+  FRESH_DAYS,
+  classifyRepo,
+  freshCutoffISO,
+  isFreshRepo,
+  skillRelevanceBoost,
+  buildSkillQueries,
+  type SkillCategory,
+} from "@/lib/skills/discovery";
 import { grokJson } from "./xai";
 
 export type SkillHit = Skill & {
@@ -21,50 +30,6 @@ type GhRepo = {
   pushed_at?: string;
   topics?: string[];
 };
-
-// Recency window for "fresh drop" surfacing (user-facing fresh-skill radar).
-export const FRESH_DAYS = 30;
-
-export function freshCutoffISO(now: number = Date.now()): string {
-  return new Date(now - FRESH_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
-export function isFreshRepo(createdAt: string | undefined, now: number = Date.now()): boolean {
-  if (!createdAt) return false;
-  return createdAt.slice(0, 10) >= freshCutoffISO(now);
-}
-
-// Lightweight category classifier for live GitHub hits so they land under
-// the right filter chip instead of defaulting to engineering.
-type SkillCategory = Skill["category"];
-const CATEGORY_SIGNALS: Array<[SkillCategory, RegExp]> = [
-  ["security", /secur|owasp|pentest|vuln|exploit|audit|threat|crypto|solidity|hack/i],
-  ["design", /design|ui\b|ux\b|frontend|tailwind|css|figma|brand/i],
-  ["devops", /devops|sre|kubernet|docker|terraform|ci\/?cd|deploy|incident|platform/i],
-  ["data", /data|rag|vector|embed|llm|ml\b|ai\b|memory|scientist|research/i],
-  ["content", /writ|copy|seo|blog|content|market|cmo|humaniz/i],
-  ["product", /product|pm\b|plan|roadmap|agile|scrum|test|qa\b/i],
-  ["leadership", /cfo|finance|legal|cmo|ceo|cto|hire|recruit|sales/i],
-];
-
-export function classifyRepo(name: string, description: string | null, topics: string[] = []): SkillCategory {
-  const text = `${name} ${description ?? ""} ${topics.join(" ")}`;
-  for (const [cat, re] of CATEGORY_SIGNALS) {
-    if (re.test(text)) return cat;
-  }
-  return "engineering";
-}
-
-// Skill-specific relevance: a repo whose name/description/topics scream
-// "agent skill" outranks a generic high-star repo on the same keywords.
-const SKILL_SIGNALS = /skill\.md|agent.?skill|claude.?skill|claude.?code|harness|plugin|marketplace|subagent|slash.?command|awesome/i;
-
-export function skillRelevanceBoost(name: string, description: string | null, topics: string[] = []): number {
-  const text = `${name} ${description ?? ""} ${topics.join(" ")}`;
-  const hits = text.match(new RegExp(SKILL_SIGNALS.source, "gi")) ?? [];
-  // +25 for the first signal, +5 for each extra (capped) — skill repos win ties.
-  return hits.length > 0 ? 25 + Math.min(15, (hits.length - 1) * 5) : 0;
-}
 
 function ghHeadersSkills(): Record<string, string> {
   const h: Record<string, string> = {
@@ -157,25 +122,17 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
 
 async function githubSearch(q: string): Promise<SkillHit[]> {
   try {
-    const cleanQ = q.replace(/[^a-zA-Z0-9\s-]/g, " ").trim();
-    if (!cleanQ) return [];
+    // NOTE: GitHub's search parser rejects topic: qualifiers and quoted
+    // phrases inside parenthesized OR groups (they silently return 0 hits),
+    // so every stream uses BARE terms only (see buildSkillQueries).
+    // Verified 2026-09-10.
+    const queries = buildSkillQueries(q, freshCutoffISO());
+    if (queries.length === 0) return [];
+    const [topicalA, topicalB, freshQ, broad] = queries;
 
-    // 1. Topical skill search: repos explicitly tagged into the skills ecosystem.
-    const topical = encodeURIComponent(
-      `${cleanQ} (topic:claude-skills OR topic:agent-skills OR topic:claude-code)`,
-    );
-    // 2. Fresh-drop radar: best repos CREATED in the last 30 days matching
-    //    skill terms, so recently published repos surface even with few stars.
-    const freshQ = encodeURIComponent(
-      `${cleanQ} (SKILL.md OR "agent skill" OR "claude skill" OR topic:claude-skills OR topic:agent-skills) created:>${freshCutoffISO()}`,
-    );
-    // 3. Broad fallback: classic keyword skill search.
-    const broad = encodeURIComponent(
-      `${cleanQ} (SKILL.md OR "agent skill" OR "claude skill")`,
-    );
-
-    const [topicalHits, freshHits, broadHits] = await Promise.all([
-      withTimeout(githubSearchRepos(topical, 6), 2500, []),
+    const [topicalAHits, topicalBHits, freshHits, broadHits] = await Promise.all([
+      withTimeout(githubSearchRepos(topicalA, 5), 2500, []),
+      withTimeout(githubSearchRepos(topicalB, 5), 2500, []),
       withTimeout(githubSearchRepos(freshQ, 6), 2500, []),
       withTimeout(githubSearchRepos(broad, 5), 2500, []),
     ]);
@@ -183,7 +140,7 @@ async function githubSearch(q: string): Promise<SkillHit[]> {
     const seen = new Set<string>();
     const out: SkillHit[] = [];
     // Fresh drops first (recency deserves visibility), then topical, then broad.
-    for (const r of [...freshHits, ...topicalHits, ...broadHits]) {
+    for (const r of [...freshHits, ...topicalAHits, ...topicalBHits, ...broadHits]) {
       const key = r.full_name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);

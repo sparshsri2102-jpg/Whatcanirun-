@@ -246,7 +246,7 @@ const ROLES = [
   ["project manager gantt", ["product-manager-pro"]],
   ["program manager dependencies", ["product-manager-pro"]],
   ["risk analyst assessment", ["security-review", "cfo-finance"]],
-  ["fraud analyst detection", ["security-review", "data-engineer"]],
+  ["fraud analyst detection", ["cfo-finance", "security-review"]], // financial-crime analyst: CFO first is honest
   ["investor relations update", ["cfo-finance", "customer-success-ops"]],
   ["patent attorney prior art", ["legal-counsel"]],
   ["trademark registration", ["legal-counsel", "brand-identity"]],
@@ -295,6 +295,21 @@ const ROLES = [
   ["plan long running agent with files", ["planning-with-files"]],
   ["project planning in markdown files", ["planning-with-files", "product-manager-pro"]],
   ["design system plugin", ["frontend-design", "open-design"]],
+  // ---- Round 4: parasite SEO + AEO/GEO ----
+  ["AEO GEO advisor", ["notfair-geo", "searchstack-aeo"]],
+  ["ai visibility tracker", ["open-geo", "ai-visibility-skill"]],
+  ["LLM citation monitor", ["citation-intelligence", "ai-visibility-skill"]],
+  ["parasite SEO publisher", ["parasite-seo-agent"]],
+  ["llms.txt generator", ["llmstxt-generator"]],
+  ["universal SEO subagents", ["claude-seo-mega"]],
+  ["technical SEO audit", ["claude-seo-mega"]],
+  ["rank my brand on ChatGPT", ["ai-visibility-skill", "open-geo", "notfair-geo"]],
+  ["barnacle SEO reddit", ["parasite-seo-agent"]],
+  ["medium devto crossposting", ["parasite-seo-agent", "seo-content-engine"]],
+  ["GEO audit for AI overviews", ["notfair-geo", "searchstack-aeo"]],
+  ["perplexity citation tracking", ["citation-intelligence"]],
+  ["chatgpt brand mentions", ["ai-visibility-skill", "open-geo"]],
+  ["claude code SEO plugin", ["claude-seo-mega", "notfair-geo"]],
 ];
 
 const TOP1_MIN = 0.85;

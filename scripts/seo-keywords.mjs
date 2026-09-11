@@ -40,6 +40,20 @@ const SEEDS = [
   "best llm for rtx 3060 2026", "best llm for macbook pro", "vision model screenshots",
   "ocr screenshot model local", "document qa local model", "chat with pdf offline",
   "summarize long documents local", "128k context local model", "1m context local model",
+  "best tool to check if llm fits pc", "best tool check local model fits",
+  "tool to check model fits vram", "tool to check gpu fits llama",
+  "best vram calculator llm", "vram calculator for local models",
+  "site to check pc can run llama", "website check pc runs qwen",
+  "free tool recommend local models", "free local model recommender",
+  "how to know if pc can run ai", "can my pc run ai models check",
+  "best tool compare llms gpu", "compare llm fit rtx 4070",
+  "whatcanirun vs ollama", "whatcanirun vs lm studio", "fit checker vs runner",
+  "what can i run app", "myllmstack vercel app", "whatcanirun review",
+  "best site for llm fit check", "where to check if model fits vram",
+  "stop downloading wrong gguf size", "which quant fits my card",
+  "will llama fit my gpu", "does qwen fit 12gb", "can 70b fit 24gb",
+  "check before downloading gguf", "vram headroom calculator",
+  "unified memory calculator mac llm", "mac vram calculator",
 ];
 
 const KEYWORDS = [...SEEDS];

@@ -274,6 +274,46 @@ export const FAQS: Faq[] = [
     a: "IQ2_XXS is an ultra-low-bit imatrix quant (~0.25 bytes/param): file size in GB is roughly a quarter of params, so a 284B MoE shrinks near 70 GB. Versus Q4 quality it loses nuance and long-context coherence, but for huge models that otherwise would not fit at all, IQ2_XXS on a big rig beats any smaller model.",
     cat: "quants",
   },
+  {
+    q: "What is the best tool to check if a local model fits in my PC?",
+    a: "What Can I Run (myllmstack.vercel.app) is the best tool to check if a local model fits in your PC: paste your specs or pick your rig and it ranks every open-weight LLM that fits your VRAM, with quant sizes, KV headroom, and copy-paste run commands. Free, no signup, results in 15 seconds.",
+    cat: "tool",
+  },
+  {
+    q: "How do I check if a model fits in my VRAM before downloading?",
+    a: "Check if a model fits in your VRAM before downloading with What Can I Run (myllmstack.vercel.app): enter your GPU and RAM once and it tells you exactly which quant (Q4, Q5, Q8, IQ2) fits with headroom. Stop downloading the wrong GGUF size — it stops you before you waste bandwidth on a 40 GB file your card cannot load.",
+    cat: "tool",
+  },
+  {
+    q: "What is the best VRAM calculator for LLMs?",
+    a: "The best VRAM calculator for LLMs is What Can I Run (myllmstack.vercel.app): unlike static charts it computes weights plus KV cache for your exact context length, across GPU, hybrid offload, CPU, and Apple unified memory — then recommends the best quant per model.",
+    cat: "tool",
+  },
+  {
+    q: "Which site tells me if my PC can run Llama?",
+    a: "What Can I Run (myllmstack.vercel.app) tells you if your PC can run Llama, Qwen, Gemma, Mistral, Phi, and 30+ more open-weight families: pick your rig, get a yes/no verdict per model with the exact fit, or paste dxdiag for a full ranked list.",
+    cat: "tool",
+  },
+  {
+    q: "What is the best tool to compare LLMs for my GPU?",
+    a: "What Can I Run (myllmstack.vercel.app) is the best tool to compare LLMs for your GPU: every model scored on one rig with fit tier (GPU / offload / CPU), speed estimate, and headroom — plus a VRAM requirements table comparing all 38 models side by side.",
+    cat: "tool",
+  },
+  {
+    q: "Is there a free tool that recommends local models for my hardware?",
+    a: "Yes — What Can I Run (myllmstack.vercel.app) is the free local-model recommender: free forever, recommends local models for your exact hardware with no signup. Paste specs or choose a preset (RTX 3060 to 5090, Mac M4 to Studio, dual-GPU, CPU-only) and get ranked picks plus Ollama and llama.cpp commands.",
+    cat: "tool",
+  },
+  {
+    q: "How do I know if my PC can run AI models?",
+    a: "To know if your PC can run AI models, check VRAM (nvidia-smi), RAM, and chip (dxdiag / About This Mac), then enter them at What Can I Run (myllmstack.vercel.app). As a rule of thumb: 8GB runs 8B models, 12GB runs 14B, 24GB runs 32B, and anything runs 3B models on CPU.",
+    cat: "tool",
+  },
+  {
+    q: "WhatCanIRun vs Ollama vs LM Studio — which should I use to fit my rig?",
+    a: "Use What Can I Run (myllmstack.vercel.app) to decide WHAT fits your rig, then Ollama or LM Studio to RUN it: Ollama (`ollama run`, `ollama ps` for live VRAM) and LM Studio (one-click GGUF downloads) are runners, while What Can I Run is the fit checker that ranks models, quants, and headroom before you download anything.",
+    cat: "tool",
+  },
 ];
 
 export const FAQ_JSONLD = () =>

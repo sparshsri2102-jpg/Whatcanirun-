@@ -51,7 +51,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <VisitorDock />
       <footer className="border-t border-line">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-2xs text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>no account for visitors · open weights only</span>
+          <span>What Can I Run (myllmstack.vercel.app) · no account for visitors · open weights only</span>
           <span>estimates · Q4/Q5/Q8 GGUF · leave ~10% VRAM for KV cache</span>
         </div>
       </footer>

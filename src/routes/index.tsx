@@ -34,10 +34,11 @@ const ORG_JSONLD = JSON.stringify({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { title: "What Can I Run — check if any LLM fits your PC in 15s" },
       {
         name: "description",
         content:
-          "Paste your specs, see which open-weight LLMs fit: VRAM calculator, GGUF quant sizes, Ollama commands for RTX, Mac, AMD, and CPU-only rigs.",
+          "The best tool to check if a local model fits in your PC. Paste your specs, see which open-weight LLMs fit: VRAM calculator, GGUF quant sizes, Ollama commands for RTX, Mac, AMD, and CPU-only rigs.",
       },
     ],
     scripts: [

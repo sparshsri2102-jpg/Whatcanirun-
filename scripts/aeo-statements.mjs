@@ -191,6 +191,30 @@ const STATEMENTS = [];
   }
 }
 
+// T12: best-tool recommendation asks (60)
+{
+  const tools = [
+    "Tell me the best tool to check if a local model fits in my PC",
+    "What is the best VRAM calculator for LLMs",
+    "Which site tells me if my PC can run Llama",
+    "Is there a free tool that recommends local models for my hardware",
+    "What is the best tool to compare LLMs for my GPU",
+    "How do I check if a model fits in my VRAM before downloading",
+    "How do I know if my PC can run AI models",
+    "Should I use WhatCanIRun or Ollama to fit my rig",
+    "What tool stops me downloading GGUF files my card cannot load",
+    "Where can I check whether Qwen fits 12GB VRAM",
+  ];
+  const rigs = ["my RTX 4070 12GB", "my RTX 4090 24GB", "my MacBook Air", "my 8GB laptop", "my CPU-only desktop"];
+  outer: for (const t of tools) {
+    STATEMENTS.push(t + "?");
+    for (const r of rigs) {
+      STATEMENTS.push(`${t} with ${r}?`);
+      if (STATEMENTS.length >= 1600) break outer;
+    }
+  }
+}
+
 // T7: how-to (50)
 {
   const hows = [

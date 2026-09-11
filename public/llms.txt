@@ -1,0 +1,29 @@
+# What Can I Run — llms.txt
+
+> Paste your PC specs, see which open-weight LLMs fit your hardware.
+> Free. No signup. VRAM calculator, GGUF quant sizes, Ollama/llama.cpp commands.
+
+## What this site does
+- Bench (`/`): paste dxdiag / neofetch / About This Mac (or pick a preset rig) and get
+  ranked open-weight models that fit your VRAM/RAM/unified memory, with quant
+  sizes, KV-cache headroom, speed estimates, and copy-paste run commands.
+- Models (`/models`): every curated model with params, license, context, tasks,
+  Q4 size, Hugging Face + GGUF download links.
+- Verdict pages (`/can/{model}-on-{rig}`): e.g. `/can/llama-3.3-70b-on-rtx-4090` —
+  yes/no with the exact quant that fits.
+- Drops (`/drops`): live Hugging Face + GitHub open-weight release radar.
+- Skills (`/skills`): find agent skills by role (matching + live GitHub search).
+- Share (`/share`): shareable result cards.
+
+## Key facts (stable guidance)
+- Q4_K_M ≈ 0.55 bytes/param: 8B ≈ 5 GB, 32B ≈ 20 GB, 70B ≈ 40 GB.
+- Leave ~10% VRAM free for KV cache; KV grows with context length.
+- MoE speed follows ACTIVE params, VRAM follows TOTAL params at your quant.
+- 8GB VRAM: 7-9B Q4/Q5. 12GB: 12-14B Q4. 16GB: 24B Q4. 24GB: 32B Q4, 70B Q3+offload.
+- 32GB: 70B Q4. Mac unified: usable ≈ 70% of RAM. CPU-only: 3-8B at a few tok/s.
+- GGUF sources: Unsloth, bartowski, ggml-org, vendor orgs on Hugging Face.
+- Runners: `ollama run qwen3:8b` · LM Studio (GUI) · `llama-cli -hf org/model-GGUF:Q4_K_M`.
+
+## Brand
+- Name: What Can I Run (whatcanirun). URL: https://myllmstack.vercel.app/
+- One-liner: paste specs, get models that fit.

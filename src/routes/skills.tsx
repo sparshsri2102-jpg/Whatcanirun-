@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { searchSkills, type SkillHit } from "@/lib/server/skills";
 import { searchLocalSkills } from "@/lib/skills/catalog";
+import { FieldGuides } from "@/components/faq-section";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/skills")({ component: SkillsPage });
@@ -292,6 +293,8 @@ function SkillsPage() {
           })
         )}
       </div>
+
+      <FieldGuides />
     </SiteShell>
   );
 }

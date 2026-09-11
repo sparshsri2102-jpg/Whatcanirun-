@@ -243,6 +243,44 @@ function ModelsPage() {
           );
         })}
       </div>
+
+      <section aria-label="VRAM requirements table" className="mt-10">
+        <p className="text-2xs uppercase tracking-[0.24em] text-muted">every model · vram requirements · quant size · ollama command</p>
+        <h2 className="mt-2 text-xl">model VRAM requirements table — run locally.</h2>
+        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          Each row lists params, the Q4 VRAM requirement in GB, the smallest quant that runs locally,
+          and the copy-paste Ollama command with a GGUF download link. Compare rows to decide which
+          model is better for your rig. Sizes exclude KV cache — leave ~10% headroom.
+        </p>
+        <div className="mt-4 overflow-x-auto border border-line">
+          <table className="w-full min-w-[720px] text-left text-xs">
+            <thead>
+              <tr className="border-b border-line text-2xs uppercase tracking-widest text-dim">
+                <th className="px-3 py-2">model</th>
+                <th className="px-3 py-2">params</th>
+                <th className="px-3 py-2">VRAM requirements (Q4)</th>
+                <th className="px-3 py-2">runs locally from</th>
+                <th className="px-3 py-2">ollama command</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MODELS.map((m) => {
+                const q4 = m.quants.find((x) => x.name === "Q4") ?? m.quants[0];
+                const min = [...m.quants].sort((a, b) => a.vramGb - b.vramGb)[0];
+                return (
+                  <tr key={m.id} className="border-b border-line/60 last:border-0">
+                    <td className="px-3 py-2 font-medium">{m.name}</td>
+                    <td className="px-3 py-2 text-muted">{m.params}</td>
+                    <td className="px-3 py-2 tabular-nums">{q4.vramGb} GB</td>
+                    <td className="px-3 py-2 tabular-nums text-muted">{min.vramGb} GB ({min.name})</td>
+                    <td className="px-3 py-2 font-mono text-muted">{m.run.ollama ?? m.run.llamacpp ?? "see GGUF download"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </SiteShell>
   );
 }

@@ -39,16 +39,16 @@ if (existsSync(outputPublic)) {
   const aiBots = ["GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "anthropic-ai", "Claude-SearchBot", "PerplexityBot", "Perplexity-User", "Google-Extended", "GoogleOther", "Applebot-Extended", "Meta-ExternalAgent", "FacebookBot", "YouBot", "cohere-ai", "Bytespider"];
   const robots = `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n\n# AI answer-engine crawlers explicitly welcome (see /llms.txt)\n${aiBots.map((b) => `User-agent: ${b}\nAllow: /\n`).join("")}`;
   for (const dir of [outputPublic, distDir, join(root, ".vercel", "output", "static")].filter(existsSync)) {
-    try { writeFileSync(join(dir, "sitemap.xml"), sitemap, "utf-8"); writeFileSync(join(dir, "robots.txt"), robots, "utf-8"); console.log(`[postbuild] Wrote sitemap.xml (${all.length} urls) + robots.txt to ${dir}`);} catch {}
+    try { writeFileSync(join(dir, "sitemap.xml"), sitemap, "utf-8"); writeFileSync(join(dir, "robots.txt"), robots, "utf-8"); console.log(`[postbuild] Wrote sitemap.xml (${all.length} urls) + robots.txt to ${dir}`);} catch { /* ignore write errors */ }
   }
   // llms.txt for AI answer engines (served at /llms.txt)
   try {
     const llms = readFileSync(join(root, "public", "llms.txt"), "utf-8");
     for (const dir of [outputPublic, distDir, join(root, ".vercel", "output", "static")].filter(existsSync)) {
-      try { writeFileSync(join(dir, "llms.txt"), llms, "utf-8"); } catch {}
+      try { writeFileSync(join(dir, "llms.txt"), llms, "utf-8"); } catch { /* ignore write errors */ }
     }
     console.log("[postbuild] Wrote llms.txt");
-  } catch {}
+  } catch { /* ignore missing llms.txt */ }
 }
 
 // Vercel fix: files with `+` in name (e.g. h3+rou3+srvx.mjs) cause

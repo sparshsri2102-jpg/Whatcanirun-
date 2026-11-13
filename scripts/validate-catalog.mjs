@@ -39,7 +39,7 @@ const QUANT_BANDS = {
 };
 
 // Tasks whose quant numbers are system footprints, not weight sizes.
-const NON_LLM_TASKS = new Set(["audio", "embed", "image"]);
+const NON_LLM_TASKS = new Set(["audio", "embed", "image", "video"]);
 
 const LICENSE_ALIASES = {
   "apache-2.0": ["apache-2.0", "apache 2.0"],

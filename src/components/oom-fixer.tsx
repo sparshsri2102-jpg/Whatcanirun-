@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Wrench, ChevronDown, ChevronUp, Check, Copy } from "lucide-react";
 
 function CopyBtn({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);
@@ -6,17 +7,25 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
     <button
       type="button"
       onClick={async () => {
-        try { await navigator.clipboard.writeText(text); }
-        catch {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
           const ta = document.createElement("textarea");
-          ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-          document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
         }
-        setDone(true); setTimeout(() => setDone(false), 1400);
+        setDone(true);
+        setTimeout(() => setDone(false), 1400);
       }}
-      className="shrink-0 border border-line bg-bg px-2 py-1 font-mono text-2xs text-muted hover:border-fg hover:text-fg"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 font-mono text-2xs text-muted transition-colors hover:border-line-strong hover:text-fg"
     >
-      {done ? "✓ copied" : label}
+      {done ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+      <span>{done ? "Copied" : label}</span>
     </button>
   );
 }
@@ -28,73 +37,143 @@ export function OomFixer() {
   const diagnosis = useMemo(() => {
     const t = err.toLowerCase();
     if (!t.trim()) return null;
-    const isCudaOom = t.includes("cuda") && t.includes("out of memory") || t.includes("cublas_status_alloc_failed") || t.includes("ggml_cuda");
-    const isSysMem = t.includes("requires more system memory") || t.includes("signal: killed") || t.includes("oom killer");
-    const isSlow = t.includes("slow") || t.includes("tokens/s") || t.includes("offload") || t.includes("cpu");
-    const isCtx = t.includes("context") || t.includes("num_ctx") || t.includes("kv") || t.includes("long");
-    if (isCudaOom) return { kind: "cuda-oom", title: "CUDA out of memory — weights + KV don't fit VRAM", fix: "Weights fit, but weights + KV cache at your context don't. Free VRAM, cap GPU layers, shrink context." };
-    if (isSysMem) return { kind: "sys-oom", title: "System RAM exhausted — model too big for RAM", fix: "Drop one model size (32B→14B→8B) or one quant (Q8→Q5→Q4), cut context to 2k–4k." };
-    if (isCtx) return { kind: "ctx", title: "KV cache ate your VRAM on long context", fix: "KV grows with every token. Halve num_ctx or quantize KV cache — instant GBs back." };
-    if (isSlow) return { kind: "slow", title: "Offload cliff — part of the model spilled to CPU", fix: "Even 10% on CPU collapses speed 5–20×. Size the model to 100% GPU or accept batch-only use." };
-    return { kind: "generic", title: "Memory pressure — model barely fits", fix: "Unload idle models, use Q4_K_M, cut context. Verify with ollama ps, not nvidia-smi alone." };
+    const isCudaOom =
+      (t.includes("cuda") && t.includes("out of memory")) ||
+      t.includes("cublas_status_alloc_failed") ||
+      t.includes("ggml_cuda");
+    const isSysMem =
+      t.includes("requires more system memory") ||
+      t.includes("signal: killed") ||
+      t.includes("oom killer");
+    const isSlow =
+      t.includes("slow") || t.includes("tokens/s") || t.includes("offload") || t.includes("cpu");
+    const isCtx =
+      t.includes("context") || t.includes("num_ctx") || t.includes("kv") || t.includes("long");
+    if (isCudaOom) {
+      return {
+        title: "CUDA Out of Memory — Weights + KV exceed dedicated VRAM",
+        fix: "Unload idle models first, enable Q8_0 KV cache quantization, and cap GPU layers or context length.",
+      };
+    }
+    if (isSysMem) {
+      return {
+        title: "Host RAM Exhausted — Model footprint exceeds system memory",
+        fix: "Step down one weight class (32B to 14B or 8B) or drop from Q8 to Q4_K_M while keeping context at 4k–8k.",
+      };
+    }
+    if (isCtx) {
+      return {
+        title: "KV Cache Overflow — Long context window saturated VRAM",
+        fix: "Set OLLAMA_FLASH_ATTENTION=1 and OLLAMA_KV_CACHE_TYPE=q8_0, or trim context to 4096 tokens.",
+      };
+    }
+    if (isSlow) {
+      return {
+        title: "PCIe Offload Cliff — Partial layers fell back to system RAM",
+        fix: "Even 10% layer spillover cuts generation throughput 5–20x. Reduce quantization to keep 100% of layers in VRAM.",
+      };
+    }
+    return {
+      title: "Memory Pressure Detected",
+      fix: "Unload cached models with ollama stop and inspect live VRAM allocation via ollama ps.",
+    };
   }, [err]);
 
   const steps = [
-    { n: "1", title: "See what's actually loaded", cmd: "ollama ps", why: "SHOWS GPU vs CPU split. nvidia-smi alone lies — 78% CPU / 22% GPU still looks 'used'." },
-    { n: "2", title: "Unload by name (frees VRAM now)", cmd: "ollama stop llama3.2:3b", why: "Ollama keeps models 5 min after use. Bare `ollama stop` errors — name is required." },
-    { n: "3", title: "Re-run with capped GPU layers", cmd: "ollama run llama3.2:3b --num-gpu 28", why: "Forces headroom for KV cache. Drop to 20–24 if still OOM. Verify with ollama ps." },
-    { n: "4", title: "Shrink context (KV is the hidden hog)", cmd: "ollama run llama3.2:3b --num-ctx 2048", why: "8k→2k saves 1–2GB on 7B. KV grows linearly — long chats OOM even when weights fit." },
+    {
+      n: "01",
+      title: "Inspect GPU vs CPU layer split",
+      cmd: "ollama ps",
+      why: "Verifies exact VRAM percentage loaded on GPU. nvidia-smi alone hides partial CPU offload.",
+    },
+    {
+      n: "02",
+      title: "Enable FlashAttention + Q8_0 KV Cache",
+      cmd: "OLLAMA_FLASH_ATTENTION=1 OLLAMA_KV_CACHE_TYPE=q8_0 ollama serve",
+      why: "Cuts context window memory usage by ~45% with zero noticeable quality degradation.",
+    },
+    {
+      n: "03",
+      title: "Unload stale weights from memory",
+      cmd: "ollama stop qwen3:8b",
+      why: "Ollama keeps previous models resident for 5 minutes; pass the exact model tag to reclaim VRAM immediately.",
+    },
+    {
+      n: "04",
+      title: "Bound context length & GPU layers",
+      cmd: "llama-cli -hf unsloth/Qwen3-14B-GGUF:Q4_K_M -c 8192 -ctk q8_0 -ctv q8_0 -ngl 99",
+      why: "Prevents unbounded context allocation during long multi-turn agent or repository sessions.",
+    },
   ];
 
   return (
-    <div className="mt-10 border border-line bg-surface">
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between px-4 py-3 text-left" aria-expanded={open}>
-        <span>
-          <span className="text-2xs uppercase tracking-[0.24em] text-warning">already hit CUDA out of memory? fix it here</span>
-          <span className="mt-1 block text-sm font-medium text-fg">OOM fixer — paste the error, get 4 commands. No restart.</span>
+    <section className="mt-8 rounded-xl border border-line bg-surface overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-elevated/60"
+        aria-expanded={open}
+      >
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-bg text-primary">
+            <Wrench className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="text-xs font-medium text-primary">CUDA OOM Diagnostics &amp; Recovery</div>
+            <div className="mt-0.5 font-display text-sm font-semibold text-fg">
+              Hitting out-of-memory errors or 3 tok/s offload slowdowns? Paste the error to diagnose.
+            </div>
+          </div>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-line bg-bg px-3 py-1.5 text-xs text-muted">
+          <span>{open ? "Hide" : "Diagnose"}</span>
+          {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </span>
-        <span className="border border-line px-2 py-1 font-mono text-2xs text-muted">{open ? "hide −" : "open →"}</span>
       </button>
+
       {open ? (
-        <div className="border-t border-line p-4 sm:p-5">
+        <div className="border-t border-line p-5">
           <label className="block">
-            <span className="text-2xs uppercase tracking-widest text-dim">paste your error (CUDA OOM / requires more memory / slow offload)</span>
+            <span className="text-xs font-medium text-muted">
+              Paste console error (CUDA OOM, ggml_cuda, requires more system memory, or slow offload)
+            </span>
             <textarea
               value={err}
               onChange={(e) => setErr(e.target.value)}
               rows={3}
-              placeholder={"e.g.\nError: CUDA error: out of memory\n  current device: 0, free: 123 MiB total: 24564 MiB"}
-              className="mt-2 min-h-[90px] w-full resize-y border border-line bg-bg px-3 py-2 font-mono text-xs text-fg placeholder:text-dim focus:border-fg focus:outline-none"
+              placeholder={"Error: CUDA error: out of memory (current device: 0, free: 123 MiB total: 24564 MiB)"}
+              className="mt-2 min-h-[84px] w-full resize-y rounded-lg border border-line bg-bg px-3.5 py-2.5 font-mono text-xs text-fg placeholder:text-dim focus:border-primary focus:outline-none"
             />
           </label>
+
           {diagnosis ? (
-            <div className="mt-3 border border-warning/30 bg-warning/5 p-3">
+            <div className="mt-4 rounded-lg border border-warning/30 bg-warning/5 p-3.5">
               <div className="text-xs font-semibold text-fg">{diagnosis.title}</div>
               <p className="mt-1 text-xs leading-relaxed text-muted">{diagnosis.fix}</p>
             </div>
-          ) : (
-            <p className="mt-3 text-xs text-dim">Try: “CUDA out of memory”, “requires more system memory”, “slow offload”, “long context OOM”.</p>
-          )}
-          <div className="mt-4 grid gap-3">
+          ) : null}
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {steps.map((s) => (
-              <div key={s.n} className="border border-line bg-bg p-3">
-                <div className="flex items-start justify-between gap-3">
+              <div key={s.n} className="rounded-lg border border-line bg-bg p-3.5">
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="font-mono text-2xs text-primary">STEP {s.n}</span>
-                    <span className="ml-2 text-xs font-medium text-fg">{s.title}</span>
-                    <p className="mt-1 text-2xs leading-relaxed text-muted">{s.why}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-2xs font-semibold text-primary">{s.n}</span>
+                      <span className="text-xs font-medium text-fg">{s.title}</span>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted">{s.why}</p>
                   </div>
-                  <CopyBtn text={s.cmd} label="copy" />
+                  <CopyBtn text={s.cmd} label="Copy" />
                 </div>
-                <code className="mt-2 block break-all border border-line bg-surface px-2 py-1.5 font-mono text-xs text-fg">{s.cmd}</code>
+                <code className="mt-2.5 block break-all rounded-md border border-line bg-surface px-2.5 py-1.5 font-mono text-2xs text-fg">
+                  {s.cmd}
+                </code>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-2xs leading-relaxed text-dim">
-            Why this works: Ollama splits layers to RAM when VRAM runs out — no crash, just 5–20× slower. These 4 commands reclaim VRAM, cap layers, and cut KV. Sources: Ollama docs, llama.cpp KV math, community OOM threads.
-          </p>
         </div>
       ) : null}
-    </div>
+    </section>
   );
 }

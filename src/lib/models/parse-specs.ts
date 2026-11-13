@@ -1,10 +1,21 @@
 import type { Specs } from "./types";
 
-const GPU_VRAM: Array<{ re: RegExp; name: string; vram: number }> = [
+const GPU_VRAM: Array<{ re: RegExp; name: string; vram: number; unified?: boolean }> = [
+  { re: /rtx\s*pro\s*6000|rtx\s*6000\s*blackwell/i, name: "RTX PRO 6000 Blackwell", vram: 96 },
+  { re: /b200/i, name: "B200", vram: 192 },
+  { re: /h200/i, name: "H200", vram: 141 },
+  { re: /h100/i, name: "H100", vram: 80 },
+  { re: /a100\s*80/i, name: "A100 80GB", vram: 80 },
+  { re: /a100/i, name: "A100", vram: 40 },
+  { re: /l40s/i, name: "L40S", vram: 48 },
+  { re: /rtx\s*a6000|rtx\s*6000\s*ada/i, name: "RTX 6000 Ada", vram: 48 },
   { re: /rtx\s*5090/i, name: "RTX 5090", vram: 32 },
   { re: /rtx\s*5080/i, name: "RTX 5080", vram: 16 },
   { re: /rtx\s*5070\s*ti/i, name: "RTX 5070 Ti", vram: 16 },
   { re: /rtx\s*5070/i, name: "RTX 5070", vram: 12 },
+  { re: /rtx\s*5060\s*ti\s*16/i, name: "RTX 5060 Ti 16GB", vram: 16 },
+  { re: /rtx\s*5060\s*ti/i, name: "RTX 5060 Ti", vram: 8 },
+  { re: /rtx\s*5060/i, name: "RTX 5060", vram: 8 },
   { re: /rtx\s*4090/i, name: "RTX 4090", vram: 24 },
   { re: /rtx\s*4080\s*super/i, name: "RTX 4080 Super", vram: 16 },
   { re: /rtx\s*4080/i, name: "RTX 4080", vram: 16 },
@@ -24,18 +35,17 @@ const GPU_VRAM: Array<{ re: RegExp; name: string; vram: number }> = [
   { re: /rtx\s*3060\s*ti/i, name: "RTX 3060 Ti", vram: 8 },
   { re: /rtx\s*3060/i, name: "RTX 3060", vram: 12 },
   { re: /rtx\s*3050/i, name: "RTX 3050", vram: 8 },
+  { re: /rx\s*9070\s*xt/i, name: "RX 9070 XT", vram: 16 },
+  { re: /rx\s*9070/i, name: "RX 9070", vram: 16 },
   { re: /rx\s*7900\s*xtx/i, name: "RX 7900 XTX", vram: 24 },
   { re: /rx\s*7900\s*xt/i, name: "RX 7900 XT", vram: 20 },
   { re: /rx\s*7800\s*xt/i, name: "RX 7800 XT", vram: 16 },
   { re: /rx\s*7600/i, name: "RX 7600", vram: 8 },
   { re: /arc\s*b580/i, name: "Arc B580", vram: 12 },
+  { re: /arc\s*b570/i, name: "Arc B570", vram: 10 },
   { re: /arc\s*a770/i, name: "Arc A770", vram: 16 },
-  { re: /a100\s*80/i, name: "A100 80GB", vram: 80 },
-  { re: /a100/i, name: "A100", vram: 40 },
-  { re: /h100/i, name: "H100", vram: 80 },
-  { re: /h200/i, name: "H200", vram: 141 },
-  { re: /l40s/i, name: "L40S", vram: 48 },
-  { re: /rtx\s*a6000|rtx\s*6000\s*ada/i, name: "RTX 6000 Ada", vram: 48 },
+  { re: /ryzen\s*ai\s*max\+?\s*395|strix\s*halo|radeon\s*8060s/i, name: "AMD Radeon 8060S (Strix Halo)", vram: 128, unified: true },
+  { re: /dgx\s*spark|gb10|project\s*digits/i, name: "NVIDIA GB10 (DGX Spark)", vram: 128, unified: true },
 ];
 
 function appleChip(text: string): { name: string; unified: boolean } | null {
@@ -68,7 +78,7 @@ export function parseSpecsHeuristic(text: string): Specs | null {
     /dedicated\s*(?:gpu|video)?\s*memory[:\s]+(\d+(?:\.\d+)?)/i,
   ]);
   const ramFromText = numGb(raw, [
-    /(\d+(?:\.\d+)?)\s*(?:gb|gi?b)\s*(?:(?:of\s+)?(?:system\s+)?ram|memory|ddr[45]|unified)/i,
+    /(\d+(?:\.\d+)?)\s*(?:gb|gi?b)\s*(?:(?:of\s+)?(?:system\s+)?ram|memory|ddr[45]|lpddr5x?|unified)/i,
     /(?:system\s+)?(?:ram|memory)[:\s]+(\d+(?:\.\d+)?)\s*(?:gb|gi?b)/i,
     /installed\s+physical\s+memory[^0-9]*(\d+(?:\.\d+)?)/i,
     /(\d+(?:\.\d+)?)\s*(?:gb|gi?b)\s+unified/i,
@@ -77,19 +87,19 @@ export function parseSpecsHeuristic(text: string): Specs | null {
   let os = "unknown";
   if (/windows|win\s*1[01]|dxdiag/i.test(raw)) os = "Windows";
   else if (/macos|os\s*x|darwin|apple\s+m\d/i.test(raw)) os = "macOS";
-  else if (/linux|ubuntu|fedora|arch|debian|nixos/i.test(raw)) os = "Linux";
+  else if (/linux|ubuntu|fedora|arch|debian|nixos|rocm|dgx/i.test(raw)) os = "Linux";
 
   const cpuMatch = raw.match(
-    /((?:intel|amd|apple)\s+(?:core\s+)?(?:i[3579]|ryzen|xeon|epyc|m[1-5])[^\n,]{0,40})/i,
+    /((?:intel|amd|apple)\s+(?:core\s+)?(?:i[3579]|ryzen(?:\s+ai(?:\s+max\+?)?)?|threadripper|xeon|epyc|m[1-5])[^\n,]{0,40})/i,
   );
   const cpu = cpuMatch?.[1]?.trim() ?? (apple ? apple.name : "unknown");
 
-  // Multi-GPU detection (e.g., 2x RTX 3090, dual 4090, 4x A100, nvidia-smi multi device output)
   let gpuCount = 1;
-  const multiMatch = raw.match(/\b([2-8])\s*x\s*(?:rtx|rx|nvidia|geforce|a100|h100|h200|l40|gpu|\d{4})/i)
-    || raw.match(/\b(?:dual|2x)\s+(?:rtx|geforce|gpu|\d{4})/i)
-    || raw.match(/\b(?:quad|4x)\s+(?:rtx|geforce|gpu|\d{4})/i)
-    || raw.match(/\b(?:octa|8x)\s+(?:rtx|geforce|gpu|\d{4})/i);
+  const multiMatch =
+    raw.match(/\b([2-8])\s*x\s*(?:rtx|rx|nvidia|geforce|a100|h100|h200|b200|l40|pro\s*6000|gpu|\d{4})/i) ||
+    raw.match(/\b(?:dual|2x)\s+(?:rtx|geforce|gpu|\d{4})/i) ||
+    raw.match(/\b(?:quad|4x)\s+(?:rtx|geforce|gpu|\d{4})/i) ||
+    raw.match(/\b(?:octa|8x)\s+(?:rtx|geforce|gpu|\d{4})/i);
 
   if (multiMatch) {
     if (multiMatch[1]) {
@@ -102,28 +112,26 @@ export function parseSpecsHeuristic(text: string): Specs | null {
       gpuCount = 8;
     }
   } else {
-    // Count distinct GPU lines in nvidia-smi / lspci pastes
     const nvidiaSmiGpuMatches = raw.match(/\|\s*([0-7])\s+NVIDIA\s+/gi) || raw.match(/GPU\s+([0-7]):/gi);
     if (nvidiaSmiGpuMatches && nvidiaSmiGpuMatches.length > 1) {
       gpuCount = Math.min(8, nvidiaSmiGpuMatches.length);
     } else {
-      const rtxOccurrences = (raw.match(/rtx\s*\d{4}/gi) ?? []).length;
+      const rtxOccurrences = (raw.match(/rtx\s*(?:pro\s*)?\d{4}/gi) ?? []).length;
       if (rtxOccurrences > 1) {
         gpuCount = Math.min(8, rtxOccurrences);
       }
     }
   }
 
-  const unified = Boolean(apple);
+  const unified = Boolean(apple || gpuHit?.unified);
   const gpuBaseName = apple?.name ?? gpuHit?.name ?? (vramFromText ? "discrete GPU" : "none");
   const gpu = gpuCount > 1 && !unified ? `${gpuCount}x ${gpuBaseName}` : gpuBaseName;
   const vramGb = unified
-    ? (ramFromText ?? 16)
+    ? (ramFromText ?? gpuHit?.vram ?? 16)
     : (vramFromText ?? gpuHit?.vram ?? 0);
   const ramGb = ramFromText ?? (unified ? vramGb : 16);
 
   if (!gpuHit && !apple && vramFromText == null && ramFromText == null) {
-    // Too little signal — still return a conservative guess if they typed a number.
     const lone = raw.match(/\b(\d{1,3})\s*gb\b/i);
     if (!lone) return null;
   }
@@ -135,7 +143,7 @@ export function parseSpecsHeuristic(text: string): Specs | null {
     cpu,
     os,
     unified,
-    gpuCount: gpuHit || apple ? gpuCount : (vramFromText ? gpuCount : 0),
+    gpuCount: gpuHit || apple ? gpuCount : vramFromText ? gpuCount : 0,
     source: "paste",
     raw: raw.slice(0, 4000),
   };

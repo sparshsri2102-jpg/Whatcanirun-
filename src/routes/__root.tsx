@@ -1,10 +1,12 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { AppNotFoundComponent } from "@/lib/error-component";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "What Can I Run — will it run? yes/no in 15s";
-const APP_DESC = "Paste specs or pick your GPU — see which open-weight LLMs fit your VRAM, fix CUDA OOMs, copy Ollama commands. No signup. RTX, Mac, AMD, laptops.";
+const APP_NAME = "What Can I Run — Local LLM & Hardware Fit Engine";
+const APP_DESC =
+  "Verify which open-weight AI models run locally on your GPU, Apple Silicon, or CPU rig. Accurate VRAM, KV cache, tok/s throughput, and runner commands.";
 const SITE_URL = "https://myllmstack.vercel.app";
 
 export const Route = createRootRoute({
@@ -14,7 +16,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
       { name: "description", content: APP_DESC },
-      { name: "theme-color", content: "#0a0a0a" },
+      { name: "theme-color", content: "#09090b" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "What Can I Run" },
       { property: "og:title", content: APP_NAME },
@@ -36,23 +38,21 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap",
       },
     ],
   }),
+  notFoundComponent: AppNotFoundComponent,
   component: () => (
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="bg-bg text-fg font-mono">
+      <body className="bg-bg text-fg font-sans">
         <PreviewHostBridge />
         <AuthProvider>
           <Outlet />
         </AuthProvider>
-        {/* Vercel Web Analytics — page-view tracking for the live deployment.
-            Same script the @vercel/analytics package injects; inlined as a tag
-            so no extra dependency is needed. View counts in Vercel dashboard → Analytics. */}
         <script defer src="https://va.vercel-scripts.com/v1/script.js" />
         <Scripts />
       </body>

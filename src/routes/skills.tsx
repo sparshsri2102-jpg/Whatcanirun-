@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { Check, Copy, ExternalLink, Search, Star } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { searchSkills, type SkillHit } from "@/lib/server/skills";
 import { searchLocalSkills } from "@/lib/skills/catalog";
@@ -20,32 +21,32 @@ const EXAMPLES = [
 ];
 
 const CATEGORIES = [
-  { id: "all", label: "all skills" },
-  { id: "leadership", label: "c-level / gtm" },
-  { id: "engineering", label: "code & tdd" },
-  { id: "security", label: "appsec & audit" },
-  { id: "devops", label: "sre & devops" },
-  { id: "design", label: "frontend / ui" },
-  { id: "data", label: "data & rag" },
-  { id: "content", label: "seo & copy" },
-  { id: "product", label: "pm & qa" },
+  { id: "all", label: "All Skills" },
+  { id: "leadership", label: "C-Level & GTM" },
+  { id: "engineering", label: "Code & TDD" },
+  { id: "security", label: "AppSec & Audit" },
+  { id: "devops", label: "SRE & DevOps" },
+  { id: "design", label: "Frontend & UI" },
+  { id: "data", label: "Data & RAG" },
+  { id: "content", label: "SEO & Copy" },
+  { id: "product", label: "PM & QA" },
 ];
 
 function getRecommendedModel(tags: string[], role: string) {
-  const t = tags.join(" ").toLowerCase() + " " + role.toLowerCase();
+  const t = `${tags.join(" ")} ${role}`.toLowerCase();
   if (t.includes("code") || t.includes("engineering") || t.includes("tdd") || t.includes("cto") || t.includes("sre") || t.includes("rust") || t.includes("python")) {
-    return { name: "Qwen 2.5 Coder 32B / 14B", task: "Code Specialist", link: "/models?task=code" };
+    return { name: "Qwen3-Coder 30B-A3B / Qwen3 14B", task: "Code Specialist", link: "/models?task=code" };
   }
   if (t.includes("reason") || t.includes("math") || t.includes("analyst") || t.includes("finance") || t.includes("cfo") || t.includes("valuation") || t.includes("security")) {
-    return { name: "DeepSeek-R1-Distill-Qwen-14B", task: "Reasoning & Logic", link: "/models?task=reason" };
+    return { name: "Magistral Small 24B / DeepSeek-R1 32B", task: "Reasoning & Logic", link: "/models?task=reason" };
   }
   if (t.includes("vision") || t.includes("design") || t.includes("ui") || t.includes("frontend") || t.includes("visual")) {
-    return { name: "Qwen 2.5 VL 7B / 72B", task: "Vision & UI Taste", link: "/models?task=vision" };
+    return { name: "Qwen 2.5 VL 7B / Gemma 3n E4B", task: "Vision & UI Taste", link: "/models?task=vision" };
   }
   if (t.includes("cmo") || t.includes("pm") || t.includes("copy") || t.includes("marketing") || t.includes("writer") || t.includes("sales")) {
-    return { name: "Llama 3.3 70B / Mistral Small 24B", task: "Instruction & Writing", link: "/models?task=chat" };
+    return { name: "Llama 4 Maverick / Qwen3 14B", task: "Instruction & Writing", link: "/models?task=chat" };
   }
-  return { name: "Llama 3.1 8B / Gemma 2 9B", task: "Fast General Chat", link: "/models?task=chat" };
+  return { name: "Qwen3 8B / Gemma 3n E4B", task: "Fast General Chat", link: "/models?task=chat" };
 }
 
 function SkillsPage() {
@@ -57,7 +58,6 @@ function SkillsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Compute immediate local matches for instant zero-lag feedback
   const localHits = useMemo(() => {
     const hits = searchLocalSkills(q).map((s) => ({
       ...s,
@@ -74,29 +74,25 @@ function SkillsPage() {
     try {
       const rows = await searchSkills({ data: { query: queryText } });
       setServerHits(rows);
-      // Cache returned live repo stars
       const newStars: Record<string, number> = {};
       rows.forEach((r) => {
         newStars[r.repo] = r.stars;
       });
       setLiveStarsMap((prev) => ({ ...prev, ...newStars }));
     } catch {
-      setError("Live search timed out. Displaying curated skills instantly.");
+      setError("Live search timed out. Showing curated local skill index.");
     } finally {
       setBusy(false);
     }
   }
 
   useEffect(() => {
-    // Initial fetch
     void runServerSearch("");
   }, []);
 
-  // Display server hits if available, filtered by category, or local fallback
   const displayHits = useMemo(() => {
     let list: SkillHit[] = serverHits ?? localHits;
     if (q.trim()) {
-      // If user typed something, localHits has instant high-precision scoring
       list = localHits;
     }
     if (category !== "all") {
@@ -119,22 +115,22 @@ function SkillsPage() {
 
   return (
     <SiteShell>
-      <div className="flex items-center justify-between">
-        <p className="text-2xs uppercase tracking-[0.28em] text-muted">skill discovery engine</p>
-        <span className="text-2xs uppercase tracking-widest text-dim">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
+        <div>
+          <div className="text-xs font-medium text-primary">Agent Skill Index</div>
+          <h1 className="mt-1.5 font-display text-3xl font-semibold tracking-tight text-fg">
+            Describe the job. Pair the exact skill.
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+            Open-source agent skill packs and role prompts matched by intent and paired with the best local model for your rig.
+          </p>
+        </div>
+
+        <span className="font-mono text-xs tabular-nums text-dim">
           {displayHits.length} matched skills
         </span>
       </div>
 
-      <h1 className="mt-3 text-2xl sm:text-3xl">describe the job. get the exact skill.</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-        Open-source agent skill packs and role prompts from GitHub, matched by semantic intent.
-        Say what you want in plain language — <span className="text-fg font-mono">“be my CMO”</span>,{" "}
-        <span className="text-fg font-mono">“act as staff SRE during incidents”</span>, or{" "}
-        <span className="text-fg font-mono">“write rigorous PRDs”</span>.
-      </p>
-
-      {/* Search Input Box */}
       <form
         className="mt-6 flex flex-col gap-3 sm:flex-row"
         onSubmit={(e) => {
@@ -142,48 +138,42 @@ function SkillsPage() {
           void runServerSearch(q);
         }}
       >
-        <div className="relative flex-1">
+        <div className="relative flex-1 flex items-center">
+          <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-dim" />
           <input
             value={q}
-            onChange={(e) => {
-              const val = e.target.value;
-              setQ(val);
-            }}
-            placeholder="Type any role or job: e.g. I want a skill that can work as my CMO…"
-            className="min-h-12 w-full border border-line bg-surface px-4 text-sm focus:border-fg focus:outline-none"
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Describe any role: e.g. act as staff SRE during incidents…"
+            className="h-12 w-full rounded-lg border border-line-strong bg-surface pl-10 pr-16 text-sm text-fg placeholder:text-dim focus:border-primary focus:outline-none"
           />
           {q ? (
             <button
               type="button"
               onClick={() => setQ("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs uppercase text-muted hover:text-fg"
+              className="absolute right-3 text-xs font-medium text-muted hover:text-fg"
             >
-              clear
+              Clear
             </button>
           ) : null}
         </div>
         <button
           type="submit"
           disabled={busy}
-          className="min-h-12 bg-fg px-6 text-sm uppercase tracking-widest text-bg transition-opacity disabled:opacity-50 hover:opacity-90"
+          className="h-12 whitespace-nowrap shrink-0 rounded-lg bg-primary px-6 text-sm font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {busy ? "searching…" : "find best skill"}
+          {busy ? "Searching…" : "Find Best Skill"}
         </button>
       </form>
 
-      {/* Filter Category Chips */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-2xs uppercase tracking-widest text-muted mr-1">filter:</span>
+      <div className="mt-4 flex flex-wrap items-center gap-1 rounded-lg border border-line bg-surface p-1">
         {CATEGORIES.map((c) => (
           <button
             key={c.id}
             type="button"
             onClick={() => setCategory(c.id)}
             className={cn(
-              "border px-2.5 py-1 text-2xs uppercase tracking-wider transition-colors",
-              category === c.id
-                ? "border-fg bg-fg text-bg"
-                : "border-line bg-surface text-muted hover:text-fg hover:border-fg/50"
+              "whitespace-nowrap shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              category === c.id ? "bg-primary text-bg" : "text-muted hover:text-fg",
             )}
           >
             {c.label}
@@ -191,31 +181,33 @@ function SkillsPage() {
         ))}
       </div>
 
-      {/* Suggested Prompts */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-2xs uppercase tracking-widest text-muted mr-1">try:</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-dim">Try prompt:</span>
         {EXAMPLES.map((ex) => (
           <button
             key={ex}
             type="button"
-            className="border border-line/60 bg-surface/50 px-2.5 py-1 text-left text-2xs text-muted hover:border-fg hover:text-fg transition-colors"
             onClick={() => {
               setQ(ex);
               void runServerSearch(ex);
             }}
+            className="rounded-md border border-line bg-surface px-2.5 py-1 text-left text-xs text-muted transition-colors hover:border-line-strong hover:text-fg"
           >
             {ex}
           </button>
         ))}
       </div>
 
-      {error ? <p className="mt-4 text-xs text-dim">{error}</p> : null}
+      {error ? (
+        <div className="mt-4 rounded-lg border border-line bg-surface px-4 py-2.5 text-xs text-muted">
+          {error}
+        </div>
+      ) : null}
 
-      {/* Skills Result Stream */}
-      <div className="mt-8 divide-y divide-line border border-line">
+      <div className="mt-8 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
         {displayHits.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted">
-            No exact skills matched &quot;{q}&quot;. Try broadening your role request or pick one of the suggested prompts above.
+          <div className="p-10 text-center text-sm text-muted">
+            No exact skills matched &quot;{q}&quot;. Broaden the query or pick one of the suggested prompts above.
           </div>
         ) : (
           displayHits.map((s, i) => {
@@ -223,69 +215,70 @@ function SkillsPage() {
             return (
               <article
                 key={s.id}
-                className="grid gap-3 px-4 py-4 hover:bg-surface transition-colors sm:grid-cols-[auto_1fr_auto] sm:items-start"
+                className="grid gap-4 px-5 py-4 transition-colors hover:bg-elevated/50 sm:grid-cols-[auto_1fr_auto] sm:items-start"
               >
-                <div className="text-2xs tabular-nums text-muted pt-0.5">
+                <div className="pt-0.5 font-mono text-xs tabular-nums text-dim">
                   {String(i + 1).padStart(2, "0")}
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                     <a
                       href={s.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-sm font-medium underline underline-offset-4 hover:text-fg"
+                      className="inline-flex items-center gap-1.5 font-display text-base font-semibold text-fg hover:text-primary transition-colors"
                     >
                       {s.name}
+                      <ExternalLink className="h-3.5 w-3.5 text-dim" />
                     </a>
-                    <span className="text-xs text-muted">· {s.repo}</span>
+                    <span className="font-mono text-xs text-dim">· {s.repo}</span>
                     {s.fresh ? (
                       <span
-                        className="border border-fg bg-fg px-1.5 py-0.5 text-2xs text-bg"
+                        className="text-xs font-medium text-success"
                         title={`Published ${s.repoCreatedAt ?? "in the last 30 days"}`}
                       >
-                        fresh &lt;30d
+                        · Fresh &lt;30d
                       </span>
                     ) : null}
                     {s.matchReason ? (
-                      <span className="border border-line bg-surface px-1.5 py-0.5 text-2xs text-fg">
-                        {s.matchReason}
-                      </span>
+                      <span className="text-xs text-primary">· {s.matchReason}</span>
                     ) : null}
                   </div>
 
-                  <p className="mt-1.5 text-xs leading-relaxed text-muted max-w-3xl">
+                  <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted">
                     {s.description}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-2xs uppercase tracking-widest text-dim">
-                    <span className="border border-line px-1.5 py-0.5 text-muted">
-                      {s.role}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                    <span className="font-medium text-fg">{s.role}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      Recommended local model:{" "}
+                      <span className="font-mono font-medium text-fg">{rec.name}</span>
                     </span>
-                    <span>·</span>
-                    <span className="text-fg font-medium">
-                      Best local model: {rec.name}
-                    </span>
-                    <Link
-                      to={rec.link}
-                      className="text-fg underline underline-offset-2 hover:opacity-80"
-                    >
-                      verify fit →
+                    <Link to={rec.link} className="font-medium text-primary hover:underline">
+                      Verify fit
                     </Link>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 self-start sm:flex-col sm:items-end">
-                  <div className="text-xs tabular-nums text-fg">
-                    {s.stars.toLocaleString()} ★
+                  <div className="inline-flex items-center gap-1 font-mono text-xs tabular-nums text-fg">
+                    <Star className="h-3.5 w-3.5 text-primary" />
+                    {s.stars.toLocaleString()}
                   </div>
                   <button
                     type="button"
                     onClick={() => copyRepo(s.id, s.repo)}
-                    className="border border-line px-2 py-0.5 text-2xs uppercase tracking-widest text-muted hover:border-fg hover:text-fg"
+                    className="inline-flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-md border border-line-strong bg-bg px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:text-fg"
                   >
-                    {copiedId === s.id ? "✓ copied" : "copy link"}
+                    {copiedId === s.id ? (
+                      <Check className="h-3 w-3 text-success" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                    {copiedId === s.id ? "Copied" : "Copy Repo"}
                   </button>
                 </div>
               </article>
@@ -294,7 +287,9 @@ function SkillsPage() {
         )}
       </div>
 
-      <FieldGuides />
+      <div className="mt-12">
+        <FieldGuides />
+      </div>
     </SiteShell>
   );
 }

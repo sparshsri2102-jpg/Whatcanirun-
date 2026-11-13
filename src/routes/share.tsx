@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Copy, Download, ExternalLink, Share2 } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { matchModels } from "@/lib/models/match";
 import type { Specs } from "@/lib/models/types";
@@ -8,75 +9,85 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/share")({ component: SharePage });
 
 const CARD_THEMES = [
-  { id: "cyber-mono", name: "Cyber Mono", bg: "#0d1117", fg: "#e6edf3", accent: "#58a6ff", border: "#30363d", sub: "#8b949e" },
-  { id: "terminal-green", name: "Phosphor 80s", bg: "#080f0a", fg: "#39ff14", accent: "#00ff66", border: "#183b1c", sub: "#1e822a" },
-  { id: "nordic-ice", name: "Nordic Frost", bg: "#2e3440", fg: "#eceff4", accent: "#88c0d0", border: "#4c566a", sub: "#d8dee9" },
-  { id: "amber-crt", name: "Amber CRT", bg: "#120a00", fg: "#ffb000", accent: "#ffcc00", border: "#422500", sub: "#b37400" },
+  { id: "obsidian-amber", name: "Obsidian Amber", bg: "#09090b", fg: "#fafafa", accent: "#f59e0b", border: "#27272a", sub: "#a1a1aa" },
+  { id: "slate-frost", name: "Slate Frost", bg: "#0f172a", fg: "#f8fafc", accent: "#38bdf8", border: "#1e293b", sub: "#94a3b8" },
+  { id: "carbon-emerald", name: "Carbon Emerald", bg: "#0a0f0d", fg: "#ecfdf5", accent: "#10b981", border: "#1f2e28", sub: "#6ee7b7" },
+  { id: "nordic-mono", name: "Nordic Mono", bg: "#18181b", fg: "#fafafa", accent: "#e4e4e7", border: "#3f3f46", sub: "#a1a1aa" },
 ];
 
-function generateMarkdownSnippet(specs: Specs, topModels: Array<{ name: string; quant: string; mem: number; speed: string; fit: string }>, ctx: number) {
-  const gpuDesc = specs.unified
-    ? `${specs.ramGb}GB Unified (${specs.cpu})`
-    : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)}GB VRAM) + ${specs.ramGb}GB RAM`;
+const SHARE_PRESETS = [
+  {
+    label: "RTX 5090 (32 GB)",
+    specs: { gpu: "NVIDIA GeForce RTX 5090", vramGb: 32, ramGb: 64, cpu: "AMD Ryzen 9 9950X", os: "Linux", unified: false, gpuCount: 1, ctx: 16 },
+  },
+  {
+    label: "RTX 5080 (16 GB)",
+    specs: { gpu: "NVIDIA GeForce RTX 5080", vramGb: 16, ramGb: 32, cpu: "AMD Ryzen 7 9800X3D", os: "Windows", unified: false, gpuCount: 1, ctx: 8 },
+  },
+  {
+    label: "2x RTX 3090 (48 GB)",
+    specs: { gpu: "NVIDIA GeForce RTX 3090", vramGb: 24, ramGb: 128, cpu: "AMD Threadripper", os: "Linux", unified: false, gpuCount: 2, ctx: 16 },
+  },
+  {
+    label: "Ryzen AI Max+ 395 (128 GB)",
+    specs: { gpu: "AMD Radeon 8060S (Strix Halo)", vramGb: 0, ramGb: 128, cpu: "AMD Ryzen AI Max+ 395", os: "Linux", unified: true, gpuCount: 1, ctx: 32 },
+  },
+  {
+    label: "Mac Studio M3 Ultra (512 GB)",
+    specs: { gpu: "Apple M3 Ultra", vramGb: 0, ramGb: 512, cpu: "Apple M3 Ultra", os: "macOS", unified: true, gpuCount: 1, ctx: 32 },
+  },
+];
 
-  return `### ⚡ What Can I Run? Fit Report
-**Rig:** ${gpuDesc} | **Context:** ${ctx}k tokens
-**OS:** ${specs.os}
+function generateMarkdownSnippet(
+  specs: Specs,
+  topModels: Array<{ name: string; quant: string; mem: number; speed: string; fit: string }>,
+  ctx: number,
+) {
+  const gpuDesc = specs.unified
+    ? `${specs.ramGb} GB Unified (${specs.cpu})`
+    : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)} GB VRAM) + ${specs.ramGb} GB RAM`;
+
+  return `### What Can I Run — Hardware Fit Report
+**Rig:** ${gpuDesc} | **Context:** ${ctx}k tokens | **OS:** ${specs.os}
 
 | Model | Quant | Total Memory | Speed | Fit Mode |
 | :--- | :---: | :---: | :---: | :---: |
 ${topModels.map((m) => `| **${m.name}** | \`${m.quant}\` | ${m.mem} GB | ${m.speed} | ${m.fit.toUpperCase()} |`).join("\n")}
 
-*Generated with [whatcanirun.dev](https://whatcanirun.dev)*`;
+*Generated with What Can I Run*`;
 }
 
-function generateAsciiCard(specs: Specs, topModels: Array<{ name: string; quant: string; mem: number; speed: string; fit: string }>, ctx: number) {
+function generateAsciiCard(
+  specs: Specs,
+  topModels: Array<{ name: string; quant: string; mem: number; speed: string; fit: string }>,
+  ctx: number,
+) {
   const gpuLine = specs.unified
-    ? `${specs.ramGb}GB Unified (${specs.gpu})`
-    : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)}GB VRAM)`;
+    ? `${specs.ramGb} GB Unified (${specs.gpu})`
+    : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)} GB VRAM)`;
 
   return `+-------------------------------------------------------------+
-|  WHAT CAN I RUN? - HARDWARE FIT BENCHMARK REPORT             |
+|  WHAT CAN I RUN - HARDWARE FIT BENCHMARK REPORT             |
 +-------------------------------------------------------------+
-| RIG:     ${gpuLine.padEnd(51)}|
-| RAM:     ${`${specs.ramGb} GB System RAM · ${specs.os}`.padEnd(51)}|
-| CONTEXT: ${`${ctx}k tokens active KV cache`.padEnd(51)}|
+| RIG:     ${gpuLine.slice(0, 51).padEnd(51)}|
+| RAM:     ${`${specs.ramGb} GB System RAM · ${specs.os}`.slice(0, 51).padEnd(51)}|
+| CONTEXT: ${`${ctx}k tokens active KV cache`.slice(0, 51).padEnd(51)}|
 +-------------------------------------------------------------+
 | TOP RUNNABLE OPEN-WEIGHT MODELS:                            |
-${topModels.map((m, i) => `| ${i + 1}. ${m.name.padEnd(20)} [${m.quant.padEnd(5)}] ${`${m.mem}GB`.padEnd(6)} ${m.speed.padEnd(16)} |`).join("\n")}
-+-------------------------------------------------------------+
-| Verify your specs & copy runner commands at whatcanirun.dev |
+${topModels.map((m, i) => `| ${i + 1}. ${m.name.slice(0, 20).padEnd(20)} [${m.quant.padEnd(5)}] ${`${m.mem}GB`.padEnd(6)} ${m.speed.slice(0, 16).padEnd(16)} |`).join("\n")}
 +-------------------------------------------------------------+`;
 }
 
 function SharePage() {
-  const [params, setParams] = useState<{
-    gpu: string;
-    vramGb: number;
-    ramGb: number;
-    cpu: string;
-    os: string;
-    unified: boolean;
-    gpuCount: number;
-    ctx: number;
-  }>({
-    gpu: "NVIDIA GeForce RTX 4090",
-    vramGb: 24,
-    ramGb: 64,
-    cpu: "AMD Ryzen 9 7950X",
-    os: "Linux",
-    unified: false,
-    gpuCount: 1,
-    ctx: 8,
-  });
-
-  const [themeId, setThemeId] = useState("cyber-mono");
+  const [params, setParams] = useState(SHARE_PRESETS[0].specs);
+  const [themeId, setThemeId] = useState("obsidian-amber");
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("https://whatcanirun.dev");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Read URL search params on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
+    setOrigin(window.location.origin);
     const sp = new URLSearchParams(window.location.search);
     const gpu = sp.get("gpu");
     const vram = sp.get("vram");
@@ -89,8 +100,8 @@ function SharePage() {
 
     if (gpu || vram || ram) {
       setParams({
-        gpu: gpu || "NVIDIA GeForce RTX 4090",
-        vramGb: Number(vram) || 24,
+        gpu: gpu || "NVIDIA GeForce RTX 5090",
+        vramGb: Number(vram) || 32,
         ramGb: Number(ram) || 64,
         cpu: cpu || "AMD Ryzen 9",
         os: os || "Linux",
@@ -101,36 +112,39 @@ function SharePage() {
     }
   }, []);
 
-  const specs: Specs = useMemo(() => ({
-    gpu: params.gpu,
-    vramGb: params.vramGb,
-    ramGb: params.ramGb,
-    cpu: params.cpu,
-    os: params.os,
-    unified: params.unified,
-    gpuCount: params.gpuCount,
-    source: "preset",
-  }), [params]);
+  const specs: Specs = useMemo(
+    () => ({
+      gpu: params.gpu,
+      vramGb: params.vramGb,
+      ramGb: params.ramGb,
+      cpu: params.cpu,
+      os: params.os,
+      unified: params.unified,
+      gpuCount: params.gpuCount,
+      source: "preset",
+    }),
+    [params],
+  );
 
-  const match = useMemo(() => {
-    return matchModels(specs, undefined, params.ctx);
-  }, [specs, params.ctx]);
+  const match = useMemo(() => matchModels(specs, undefined, params.ctx), [specs, params.ctx]);
 
-  const currentTheme = useMemo(() => {
-    return CARD_THEMES.find((t) => t.id === themeId) || CARD_THEMES[0];
-  }, [themeId]);
+  const currentTheme = useMemo(
+    () => CARD_THEMES.find((t) => t.id === themeId) || CARD_THEMES[0],
+    [themeId],
+  );
 
-  const topFitList = useMemo(() => {
-    return match.picks.slice(0, 4).map((p) => ({
-      name: p.model.name,
-      quant: p.quant.name,
-      mem: Math.round(((p.weightsGb || p.quant.vramGb) + (p.kvCacheGb || 0.5)) * 10) / 10,
-      speed: p.speed,
-      fit: p.fit,
-    }));
-  }, [match]);
+  const topFitList = useMemo(
+    () =>
+      match.picks.slice(0, 4).map((p) => ({
+        name: p.model.name,
+        quant: p.quant.name,
+        mem: Math.round(((p.weightsGb || p.quant.vramGb) + (p.kvCacheGb || 0.5)) * 10) / 10,
+        speed: p.speed,
+        fit: p.fit,
+      })),
+    [match],
+  );
 
-  // Draw High-Resolution Social Preview Card to Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -144,11 +158,9 @@ function SharePage() {
 
     const t = currentTheme;
 
-    // Background
     ctx.fillStyle = t.bg;
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle grid pattern
     ctx.strokeStyle = t.border;
     ctx.lineWidth = 1;
     for (let x = 40; x < width; x += 40) {
@@ -164,114 +176,101 @@ function SharePage() {
       ctx.stroke();
     }
 
-    // Outer border frame
-    ctx.strokeStyle = t.accent;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(30, 30, width - 60, height - 60);
-
-    // Inner card background
     ctx.fillStyle = t.bg;
-    ctx.fillRect(40, 40, width - 80, height - 80);
+    ctx.fillRect(36, 36, width - 72, height - 72);
+    ctx.strokeStyle = t.border;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(36, 36, width - 72, height - 72);
 
-    // Header badge
     ctx.fillStyle = t.accent;
-    ctx.font = "bold 18px monospace";
-    ctx.fillText("⚡ WHAT CAN I RUN? // HARDWARE FIT BENCHMARK", 60, 85);
+    ctx.font = "600 16px sans-serif";
+    ctx.fillText("WHAT CAN I RUN · HARDWARE FIT REPORT", 64, 82);
 
     ctx.fillStyle = t.sub;
     ctx.font = "14px monospace";
-    ctx.fillText("whatcanirun.dev · local llm sizing engine", width - 380, 85);
+    ctx.fillText("Local Open-Weight Sizing Engine", width - 310, 82);
 
-    // Divider
     ctx.strokeStyle = t.border;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(60, 105);
-    ctx.lineTo(width - 60, 105);
+    ctx.moveTo(64, 102);
+    ctx.lineTo(width - 64, 102);
     ctx.stroke();
 
-    // Rig overview section
     ctx.fillStyle = t.fg;
-    ctx.font = "bold 34px sans-serif";
+    ctx.font = "bold 32px sans-serif";
     const gpuTitle = specs.unified
-      ? `${specs.ramGb}GB Unified Memory (${specs.gpu})`
-      : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)}GB VRAM)`;
-    ctx.fillText(gpuTitle, 60, 160);
+      ? `${specs.ramGb} GB Unified Memory (${specs.gpu})`
+      : `${specs.gpuCount > 1 ? `${specs.gpuCount}x ` : ""}${specs.gpu} (${specs.vramGb * Math.max(1, specs.gpuCount)} GB VRAM)`;
+    ctx.fillText(gpuTitle, 64, 154);
 
     ctx.fillStyle = t.sub;
-    ctx.font = "18px monospace";
+    ctx.font = "16px monospace";
     ctx.fillText(
-      `System RAM: ${specs.ramGb}GB · OS: ${specs.os} · Context: ${params.ctx}k tokens · Bandwidth: ~${match.picks[0]?.bandwidthGbS || 900} GB/s`,
-      60,
-      195
+      `RAM: ${specs.ramGb} GB · OS: ${specs.os} · Context: ${params.ctx}k · Bandwidth: ~${match.picks[0]?.bandwidthGbS || 900} GB/s`,
+      64,
+      190,
     );
 
-    // Divider
     ctx.strokeStyle = t.border;
     ctx.beginPath();
-    ctx.moveTo(60, 220);
-    ctx.lineTo(width - 60, 220);
+    ctx.moveTo(64, 214);
+    ctx.lineTo(width - 64, 214);
     ctx.stroke();
 
-    // Table Header
     ctx.fillStyle = t.accent;
-    ctx.font = "bold 15px monospace";
-    ctx.fillText("RUNNABLE MODEL", 60, 255);
-    ctx.fillText("QUANT", 480, 255);
-    ctx.fillText("TOTAL VRAM / RAM", 620, 255);
-    ctx.fillText("EST. INFERENCE SPEED", 830, 255);
-    ctx.fillText("FIT STATUS", 1040, 255);
+    ctx.font = "600 13px monospace";
+    ctx.fillText("MODEL", 64, 250);
+    ctx.fillText("QUANT", 470, 250);
+    ctx.fillText("FOOTPRINT", 610, 250);
+    ctx.fillText("DECODE SPEED", 800, 250);
+    ctx.fillText("FIT", 1040, 250);
 
-    // Rows
-    let y = 295;
+    let y = 294;
     topFitList.forEach((item, index) => {
-      ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent";
-      ctx.fillRect(50, y - 25, width - 100, 48);
+      ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.025)" : "transparent";
+      ctx.fillRect(54, y - 26, width - 108, 48);
 
       ctx.fillStyle = t.fg;
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText(`${index + 1}. ${item.name}`, 60, y + 5);
+      ctx.font = "600 18px sans-serif";
+      ctx.fillText(`${index + 1}. ${item.name}`, 64, y + 4);
 
       ctx.fillStyle = t.accent;
-      ctx.font = "bold 16px monospace";
-      ctx.fillText(item.quant, 480, y + 5);
+      ctx.font = "600 15px monospace";
+      ctx.fillText(item.quant, 470, y + 4);
 
       ctx.fillStyle = t.fg;
-      ctx.font = "16px monospace";
-      ctx.fillText(`${item.mem} GB`, 620, y + 5);
+      ctx.font = "15px monospace";
+      ctx.fillText(`${item.mem} GB`, 610, y + 4);
 
       ctx.fillStyle = t.sub;
       ctx.font = "15px monospace";
-      ctx.fillText(item.speed, 830, y + 5);
+      ctx.fillText(item.speed, 800, y + 4);
 
-      // Fit badge
       const isGpu = item.fit === "gpu";
       ctx.fillStyle = isGpu ? t.accent : t.sub;
-      ctx.font = "bold 14px monospace";
-      ctx.fillText(isGpu ? "[✓ FITS GPU]" : "[HYBRID / RAM]", 1040, y + 5);
+      ctx.font = "600 14px monospace";
+      ctx.fillText(isGpu ? "FITS GPU" : "HYBRID", 1040, y + 4);
 
       y += 58;
     });
 
-    // Footer
     ctx.strokeStyle = t.border;
     ctx.beginPath();
-    ctx.moveTo(60, height - 75);
-    ctx.lineTo(width - 60, height - 75);
+    ctx.moveTo(64, height - 74);
+    ctx.lineTo(width - 64, height - 74);
     ctx.stroke();
 
     ctx.fillStyle = t.sub;
     ctx.font = "13px monospace";
-    ctx.fillText("Accurate weights + KV cache footprint modeling for Ollama, llama.cpp, vLLM & LM Studio", 60, height - 45);
+    ctx.fillText("Weights + KV cache sizing for Ollama, LM Studio, llama.cpp, vLLM & MLX", 64, height - 46);
 
     ctx.fillStyle = t.accent;
-    ctx.font = "bold 14px monospace";
-    ctx.fillText("whatcanirun.dev", width - 180, height - 45);
+    ctx.font = "600 14px monospace";
+    ctx.fillText("whatcanirun.dev", width - 190, height - 46);
   }, [specs, currentTheme, topFitList, match, params.ctx]);
 
   const shareUrl = useMemo(() => {
-    if (typeof window === "undefined") return "https://whatcanirun.dev";
-    const base = window.location.origin;
     const sp = new URLSearchParams();
     sp.set("gpu", specs.gpu);
     sp.set("vram", String(specs.vramGb));
@@ -281,8 +280,8 @@ function SharePage() {
     if (specs.unified) sp.set("unified", "1");
     if (specs.gpuCount > 1) sp.set("gpus", String(specs.gpuCount));
     if (params.ctx !== 8) sp.set("ctx", String(params.ctx));
-    return `${base}/share?${sp.toString()}`;
-  }, [specs, params.ctx]);
+    return `${origin}/share?${sp.toString()}`;
+  }, [origin, specs, params.ctx]);
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -304,23 +303,6 @@ function SharePage() {
     }
   };
 
-  const copyImageToClipboard = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    try {
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        // ClipboardItem is available in modern browsers
-        const item = new (window as unknown as { ClipboardItem: new (d: Record<string, Blob>) => ClipboardItem }).ClipboardItem({ "image/png": blob });
-        await navigator.clipboard.write([item]);
-        setCopiedType("image");
-        setTimeout(() => setCopiedType(null), 2000);
-      });
-    } catch {
-      downloadImage();
-    }
-  };
-
   const downloadImage = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -332,70 +314,74 @@ function SharePage() {
     setTimeout(() => setCopiedType(null), 2000);
   };
 
+  const copyImageToClipboard = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const item = new (window as unknown as { ClipboardItem: new (d: Record<string, Blob>) => ClipboardItem }).ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+        setCopiedType("image");
+        setTimeout(() => setCopiedType(null), 2000);
+      });
+    } catch {
+      downloadImage();
+    }
+  };
+
   return (
     <SiteShell>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
         <div>
-          <p className="text-2xs uppercase tracking-[0.28em] text-muted">social spec card & share</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl">hardware fit card generator</h1>
+          <div className="text-xs font-medium text-primary">Share Studio</div>
+          <h1 className="mt-1.5 font-display text-3xl font-semibold tracking-tight text-fg">
+            Hardware Fit Card Generator
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+            Export high-resolution 1200×630 hardware cards, copy share links, or generate Reddit and Discord benchmark tables.
+          </p>
         </div>
+
         <Link
           to="/"
-          className="border border-line px-3 py-1.5 text-xs uppercase tracking-widest text-muted hover:text-fg"
+          className="whitespace-nowrap shrink-0 rounded-lg border border-line-strong bg-surface px-4 py-2 text-xs font-medium text-fg transition-colors hover:bg-elevated"
         >
-          ← back to bench
+          Back to Bench
         </Link>
       </div>
 
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-        Generate high-resolution social preview cards, copy share links, or export Reddit & Discord formatted benchmark tables to show your rig's local model sizing.
-      </p>
-
-      {/* Preset Quick Switcher */}
-      <div className="mt-6 flex flex-wrap items-center gap-2 border border-line bg-surface p-3">
-        <span className="text-2xs uppercase tracking-widest text-dim mr-2">quick presets:</span>
-        <button
-          type="button"
-          onClick={() => setParams({ gpu: "NVIDIA GeForce RTX 4090", vramGb: 24, ramGb: 64, cpu: "AMD Ryzen 9 7950X", os: "Linux", unified: false, gpuCount: 1, ctx: 8 })}
-          className="border border-line px-2 py-1 text-2xs hover:border-fg"
-        >
-          1x RTX 4090 (24GB)
-        </button>
-        <button
-          type="button"
-          onClick={() => setParams({ gpu: "NVIDIA GeForce RTX 3090", vramGb: 24, ramGb: 128, cpu: "AMD Threadripper", os: "Linux", unified: false, gpuCount: 2, ctx: 8 })}
-          className="border border-line px-2 py-1 text-2xs hover:border-fg"
-        >
-          2x RTX 3090 (48GB Stacking)
-        </button>
-        <button
-          type="button"
-          onClick={() => setParams({ gpu: "Apple M2 Ultra", vramGb: 192, ramGb: 192, cpu: "Apple M2 Ultra (24-core)", os: "macOS", unified: true, gpuCount: 1, ctx: 32 })}
-          className="border border-line px-2 py-1 text-2xs hover:border-fg"
-        >
-          Mac Studio M2 Ultra (192GB)
-        </button>
-        <button
-          type="button"
-          onClick={() => setParams({ gpu: "NVIDIA GeForce RTX 3060", vramGb: 12, ramGb: 32, cpu: "Intel Core i7-12700K", os: "Windows", unified: false, gpuCount: 1, ctx: 8 })}
-          className="border border-line px-2 py-1 text-2xs hover:border-fg"
-        >
-          RTX 3060 (12GB Budget King)
-        </button>
+      {/* Presets */}
+      <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-3.5">
+        <span className="mr-1 text-xs font-medium text-dim">Reference Presets:</span>
+        {SHARE_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => setParams(preset.specs)}
+            className={cn(
+              "whitespace-nowrap shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+              params.gpu === preset.specs.gpu && params.ramGb === preset.specs.ramGb
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-line bg-bg text-muted hover:text-fg",
+            )}
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
-      {/* Theme Picker & Action Bar */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-2xs uppercase tracking-widest text-dim">card style:</span>
+      {/* Theme & Export Bar */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-line bg-surface p-1">
           {CARD_THEMES.map((theme) => (
             <button
               key={theme.id}
               type="button"
               onClick={() => setThemeId(theme.id)}
               className={cn(
-                "px-2.5 py-1 text-2xs uppercase tracking-wider border transition-colors",
-                themeId === theme.id ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"
+                "whitespace-nowrap shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                themeId === theme.id ? "bg-elevated text-fg" : "text-muted hover:text-fg",
               )}
             >
               {theme.name}
@@ -407,89 +393,75 @@ function SharePage() {
           <button
             type="button"
             onClick={copyImageToClipboard}
-            className="min-h-10 border border-fg bg-fg px-3 text-xs font-mono text-bg uppercase tracking-wider hover:opacity-90 transition-opacity"
+            className="inline-flex h-10 whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold text-bg transition-opacity hover:opacity-90"
           >
-            {copiedType === "image" ? "✓ image copied to clipboard!" : "📋 copy card image"}
+            {copiedType === "image" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedType === "image" ? "Image Copied" : "Copy Card PNG"}
           </button>
           <button
             type="button"
             onClick={downloadImage}
-            className="min-h-10 border border-line px-3 text-xs uppercase tracking-wider text-muted hover:text-fg hover:border-fg transition-colors"
+            className="inline-flex h-10 whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3.5 text-xs font-medium text-fg hover:bg-elevated"
           >
-            {copiedType === "download" ? "✓ downloaded!" : "⬇ download png"}
+            <Download className="h-3.5 w-3.5" />
+            {copiedType === "download" ? "Saved" : "Download PNG"}
           </button>
           <button
             type="button"
             onClick={() => copyToClipboard(shareUrl, "url")}
-            className="min-h-10 border border-line px-3 text-xs uppercase tracking-wider text-muted hover:text-fg hover:border-fg transition-colors"
+            className="inline-flex h-10 whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3.5 text-xs font-medium text-fg hover:bg-elevated"
           >
-            {copiedType === "url" ? "✓ link copied!" : "🔗 copy share link"}
+            <Share2 className="h-3.5 w-3.5" />
+            {copiedType === "url" ? "Link Copied" : "Copy Link"}
           </button>
           <a
-            href={`https://www.reddit.com/r/LocalLLaMA/submit?title=${encodeURIComponent(`My rig can run ${specs.gpu} — ${topFitList[0]?.name ?? 'local LLM'} fit report`)}&url=${encodeURIComponent(shareUrl)}`}
+            href={`https://www.reddit.com/r/LocalLLaMA/submit?title=${encodeURIComponent(`My rig can run ${specs.gpu} — ${topFitList[0]?.name ?? "local LLM"} fit report`)}&url=${encodeURIComponent(shareUrl)}`}
             target="_blank"
             rel="noreferrer"
-            className="min-h-10 inline-flex items-center border border-orange-600/50 bg-orange-950/20 px-3 text-xs uppercase tracking-wider text-orange-300 hover:bg-orange-900/30 transition-colors"
+            className="inline-flex h-10 whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3.5 text-xs font-medium text-fg hover:bg-elevated"
           >
-            ↗ post to r/LocalLLaMA
+            Post to r/LocalLLaMA <ExternalLink className="h-3.5 w-3.5 text-dim" />
           </a>
-          {typeof navigator !== 'undefined' && (navigator as { share?: (d: { title: string; url: string })=>Promise<void> }).share ? (
-            <button
-              type="button"
-              onClick={() => {
-                const nav = navigator as unknown as { share: (d:{title:string;url:string})=>Promise<void> };
-                nav.share({ title: `My rig: ${specs.gpu} — what can I run?`, url: shareUrl }).catch(()=>{});
-              }}
-              className="min-h-10 border border-line px-3 text-xs uppercase tracking-wider text-muted hover:text-fg"
-            >
-              ▸ share
-            </button>
-          ) : null}
         </div>
       </div>
 
-      {/* Visual Canvas Card Preview */}
-      <div className="mt-6 overflow-hidden border border-line bg-black p-2 sm:p-4">
+      {/* Canvas Preview */}
+      <div className="mt-5 overflow-hidden rounded-xl border border-line bg-bg p-2 sm:p-4">
         <div className="relative aspect-[1200/630] w-full">
-          <canvas
-            ref={canvasRef}
-            className="h-full w-full object-contain"
-          />
+          <canvas ref={canvasRef} className="h-full w-full rounded-lg object-contain" />
         </div>
       </div>
 
-      {/* Export Formats Grid */}
+      {/* Exports */}
       <div className="mt-8 grid gap-6 md:grid-cols-2">
-        {/* Reddit & Discord Markdown */}
-        <div className="border border-line bg-surface p-4">
+        <div className="rounded-xl border border-line bg-surface p-5">
           <div className="flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-widest text-dim">reddit / discord markdown:</span>
+            <span className="text-xs font-medium text-fg">Reddit / Discord Markdown</span>
             <button
               type="button"
               onClick={() => copyToClipboard(generateMarkdownSnippet(specs, topFitList, params.ctx), "md")}
-              className="text-2xs uppercase tracking-widest text-muted underline hover:text-fg"
+              className="text-xs font-medium text-primary hover:underline"
             >
-              {copiedType === "md" ? "✓ copied" : "copy markdown"}
+              {copiedType === "md" ? "Copied" : "Copy Markdown"}
             </button>
           </div>
-          <pre className="mt-3 max-h-48 overflow-x-auto border border-line bg-bg p-3 text-2xs text-muted font-mono whitespace-pre-wrap">
+          <pre className="mt-3 max-h-52 overflow-x-auto rounded-lg border border-line bg-bg p-3.5 font-mono text-xs text-muted whitespace-pre-wrap">
             {generateMarkdownSnippet(specs, topFitList, params.ctx)}
           </pre>
         </div>
 
-        {/* ASCII Terminal Art */}
-        <div className="border border-line bg-surface p-4">
+        <div className="rounded-xl border border-line bg-surface p-5">
           <div className="flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-widest text-dim">ascii telemetry card:</span>
+            <span className="text-xs font-medium text-fg">ASCII Terminal Report</span>
             <button
               type="button"
               onClick={() => copyToClipboard(generateAsciiCard(specs, topFitList, params.ctx), "ascii")}
-              className="text-2xs uppercase tracking-widest text-muted underline hover:text-fg"
+              className="text-xs font-medium text-primary hover:underline"
             >
-              {copiedType === "ascii" ? "✓ copied" : "copy ascii"}
+              {copiedType === "ascii" ? "Copied" : "Copy ASCII"}
             </button>
           </div>
-          <pre className="mt-3 max-h-48 overflow-x-auto border border-line bg-bg p-3 text-2xs text-muted font-mono whitespace-pre">
+          <pre className="mt-3 max-h-52 overflow-x-auto rounded-lg border border-line bg-bg p-3.5 font-mono text-xs text-muted whitespace-pre">
             {generateAsciiCard(specs, topFitList, params.ctx)}
           </pre>
         </div>

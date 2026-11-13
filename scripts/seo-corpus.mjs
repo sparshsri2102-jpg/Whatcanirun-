@@ -53,7 +53,7 @@ export let routeTextUnion = "";
 for (const f of routeFiles) {
   try {
     routeTextUnion += "\n" + norm(fs.readFileSync(path.join(ROOT, f), "utf8"));
-  } catch {}
+  } catch { /* ignore missing optional route file */ }
 }
 
 export const faqEntries = FAQS.map((f) => norm(`${f.q} ${f.a}`));

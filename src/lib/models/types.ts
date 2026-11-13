@@ -11,6 +11,8 @@ export type ModelTask =
 
 export type QuantName = "IQ2" | "Q3" | "Q4" | "Q5" | "Q8" | "FP8" | "FP16";
 
+export type KvQuant = "fp16" | "q8_0" | "q4_0";
+
 export type Quant = {
   name: QuantName;
   vramGb: number;
@@ -25,6 +27,8 @@ export type Model = {
   paramsB: number;
   totalParamsB?: number;
   moe: boolean;
+  architecture?: string;
+  isNew?: boolean;
   license: string;
   contextK: number;
   tasks: ModelTask[];
@@ -38,6 +42,7 @@ export type Model = {
     ollama?: string;
     lmstudio?: string;
     llamacpp?: string;
+    mlx?: string;
   };
   notes?: string;
   quality: number;
@@ -57,7 +62,7 @@ export type Specs = {
 
 export type FitKind = "gpu" | "hybrid" | "cpu" | "no";
 
-export type RunnerType = "ollama" | "lmstudio" | "llamacpp" | "vllm" | "jan";
+export type RunnerType = "ollama" | "lmstudio" | "llamacpp" | "vllm" | "mlx" | "jan";
 
 export type QuantOption = {
   quant: Quant;
@@ -65,7 +70,12 @@ export type QuantOption = {
   headroomGb: number;
   speed: string;
   totalNeededGb: number;
+  maxSafeContextK?: number;
   tokPerSec?: string;
+  tokPerSecMin?: number;
+  tokPerSecMax?: number;
+  prefillTokS?: number;
+  ttftMs?: number;
   bandwidthGbS?: number;
   busType?: string;
 };
@@ -79,11 +89,23 @@ export type ModelFit = {
   why: string;
   speed: string;
   tokPerSec?: string;
+  tokPerSecMin?: number;
+  tokPerSecMax?: number;
+  prefillTokS?: number;
+  ttftMs?: number;
   bandwidthGbS?: number;
   busType?: string;
   weightsGb?: number;
   kvCacheGb?: number;
   totalNeededGb?: number;
+  maxSafeContextK?: number;
+  cloudFallback?: {
+    name: string;
+    vramGb: number;
+    hourlyUsd: number;
+    providerHint: string;
+  } | null;
+  kvQuant?: KvQuant;
   quantOptions?: QuantOption[];
 };
 
@@ -93,4 +115,8 @@ export type MatchResult = {
   also: ModelFit[];
   blurb: string;
   contextK?: number;
+  kvQuant?: KvQuant;
+  batchSize?: number;
+  effectivePoolGb?: number;
+  hybridPoolGb?: number;
 };

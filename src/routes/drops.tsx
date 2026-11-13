@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { Bell, Check, Copy, Download, ExternalLink, Rss, Search, Webhook, X } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { listDrops, getRssFeedXml, sendWebhookTest, type DropItem } from "@/lib/server/drops";
 import type { Specs } from "@/lib/models/types";
@@ -30,13 +31,12 @@ function DropsPage() {
   const [search, setSearch] = useState("");
   const [savedSpecs, setSavedSpecs] = useState<Specs | null>(null);
 
-  // Webhook & RSS States
   const [showWebhookDrawer, setShowWebhookDrawer] = useState(false);
   const [showRssModal, setShowRssModal] = useState(false);
   const [rssXml, setRssXml] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookVramFilter, setWebhookVramFilter] = useState(24);
-  const [webhookStatus, setWebhookStatus] = useState<string | null>(null);
+  const [webhookStatus, setWebhookStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [webhookTesting, setWebhookTesting] = useState(false);
   const [copiedRss, setCopiedRss] = useState(false);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
@@ -64,7 +64,7 @@ function DropsPage() {
           setError(null);
         })
         .catch(() => {
-          if (!n) setError("Could not reach Hugging Face / GitHub right now.");
+          if (!n) setError("Could not reach Hugging Face or GitHub feeds right now.");
         });
       n += 1;
     };
@@ -121,7 +121,7 @@ function DropsPage() {
 
   async function handleTestWebhook() {
     if (!webhookUrl.trim()) {
-      setWebhookStatus("Please enter a Discord or Slack Webhook URL.");
+      setWebhookStatus({ ok: false, text: "Enter a Discord or Slack Webhook URL." });
       return;
     }
     setWebhookTesting(true);
@@ -135,33 +135,30 @@ function DropsPage() {
         },
       });
       if (res.ok) {
-        setWebhookStatus(`✓ ${res.message}`);
+        setWebhookStatus({ ok: true, text: res.message });
       } else {
-        setWebhookStatus(`✗ ${res.error}`);
+        setWebhookStatus({ ok: false, text: res.error });
       }
     } catch {
-      setWebhookStatus("✗ Connection failed. Please check the Webhook URL.");
+      setWebhookStatus({ ok: false, text: "Connection failed. Verify the Webhook URL." });
     } finally {
       setWebhookTesting(false);
     }
   }
 
   async function handleToggleNotifications() {
-    if (!("Notification" in window)) {
-      alert("Desktop notifications are not supported in this browser.");
-      return;
-    }
+    if (!("Notification" in window)) return;
     if (Notification.permission === "granted") {
-      new Notification("What Can I Run?", {
-        body: "Drop alerts are active. You will receive notifications when new GGUF quants drop!",
+      new Notification("What Can I Run", {
+        body: "Release notifications are active for new GGUF quants and local model drops.",
       });
       setNotifyEnabled(true);
     } else {
       const perm = await Notification.requestPermission();
       setNotifyEnabled(perm === "granted");
       if (perm === "granted") {
-        new Notification("What Can I Run?", {
-          body: "Subscribed to live open-weight model drop notifications!",
+        new Notification("What Can I Run", {
+          body: "Subscribed to open-weight release alerts.",
         });
       }
     }
@@ -169,70 +166,73 @@ function DropsPage() {
 
   return (
     <SiteShell>
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
         <div>
-          <p className="text-2xs uppercase tracking-[0.28em] text-muted">live feed & alert radar</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl">open-weight drops</h1>
+          <div className="text-xs font-medium text-primary">Release Radar</div>
+          <h1 className="mt-1.5 font-display text-3xl font-semibold tracking-tight text-fg">
+            Live Open-Weight Drops
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+            Real-time stream of Hugging Face text-generation and GGUF releases paired with trending GitHub open-weight repositories.
+          </p>
+          {savedSpecs ? (
+            <div className="mt-2.5 text-xs text-muted">
+              Active hardware:{" "}
+              <span className="font-mono font-medium text-fg">
+                {savedSpecs.gpu} ({savedSpecs.unified ? `${savedSpecs.ramGb} GB Unified` : `${savedSpecs.vramGb * Math.max(1, savedSpecs.gpuCount)} GB VRAM`})
+              </span>
+            </div>
+          ) : null}
         </div>
 
-        {/* RSS & Webhook Alert Actions */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleToggleNotifications}
             className={cn(
-              "min-h-9 border px-3 text-2xs uppercase tracking-widest transition-colors",
+              "inline-flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-medium transition-colors",
               notifyEnabled
-                ? "border-fg bg-fg text-bg"
-                : "border-line text-muted hover:border-fg hover:text-fg"
+                ? "border-primary bg-primary text-bg"
+                : "border-line-strong bg-surface text-fg hover:bg-elevated",
             )}
           >
-            {notifyEnabled ? "🔔 alerts on" : "🔔 enable alerts"}
+            <Bell className="h-3.5 w-3.5" />
+            {notifyEnabled ? "Alerts Active" : "Enable Alerts"}
           </button>
           <button
             type="button"
             onClick={() => setShowWebhookDrawer(!showWebhookDrawer)}
             className={cn(
-              "min-h-9 border px-3 text-2xs uppercase tracking-widest transition-colors",
+              "inline-flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-medium transition-colors",
               showWebhookDrawer
-                ? "border-fg bg-fg text-bg"
-                : "border-line text-muted hover:border-fg hover:text-fg"
+                ? "border-primary bg-primary text-bg"
+                : "border-line-strong bg-surface text-fg hover:bg-elevated",
             )}
           >
-            {showWebhookDrawer ? "hide webhooks" : "⚡ webhook relay"}
+            <Webhook className="h-3.5 w-3.5" />
+            {showWebhookDrawer ? "Hide Webhook" : "Webhook Relay"}
           </button>
           <button
             type="button"
             onClick={handleOpenRss}
-            className="min-h-9 border border-line bg-surface px-3 text-2xs uppercase tracking-widest text-fg hover:border-fg"
+            className="inline-flex whitespace-nowrap shrink-0 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3.5 py-2 text-xs font-medium text-fg transition-colors hover:bg-elevated"
           >
-            📡 rss feed
+            <Rss className="h-3.5 w-3.5" />
+            RSS Feed
           </button>
         </div>
       </div>
 
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-        Real-time radar scanning Hugging Face text-generation + GGUF uploads and GitHub open-weight repos.
-        {savedSpecs ? (
-          <span className="block mt-1 text-xs text-fg">
-            Filtered for your active rig:{" "}
-            <span className="font-mono">{savedSpecs.gpu} ({savedSpecs.vramGb} GB VRAM)</span>
-          </span>
-        ) : null}
-      </p>
-
-      {/* Webhook Configuration Drawer */}
       {showWebhookDrawer ? (
-        <div className="mt-6 border border-line bg-surface p-4 sm:p-5">
+        <div className="mt-6 rounded-xl border border-line-strong bg-surface p-5">
           <div className="flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-[0.24em] text-muted">
-              Discord / Slack Webhook Alerts
-            </span>
-            <span className="text-2xs font-mono text-dim">Automated Push Relay</span>
+            <h2 className="font-display text-sm font-semibold text-fg">
+              Discord & Slack Webhook Relay
+            </h2>
+            <span className="text-xs font-mono text-dim">Push Dispatch</span>
           </div>
-          <p className="mt-2 text-xs text-muted leading-relaxed">
-            Paste your Discord server channel Webhook URL to get instant notifications when new high-profile
-            LLM weights and GGUF quantizations drop.
+          <p className="mt-1.5 text-xs text-muted leading-relaxed">
+            Route new model weights and GGUF quantizations directly to a team Discord or Slack channel filtered by your VRAM ceiling.
           </p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
@@ -241,64 +241,62 @@ function DropsPage() {
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
               placeholder="https://discord.com/api/webhooks/..."
-              className="min-h-11 border border-line bg-bg px-3 text-xs font-mono text-fg focus:border-fg focus:outline-none"
+              className="h-11 rounded-lg border border-line-strong bg-bg px-3.5 font-mono text-xs text-fg placeholder:text-dim focus:border-primary focus:outline-none"
             />
             <select
               value={webhookVramFilter}
               onChange={(e) => setWebhookVramFilter(Number(e.target.value))}
-              className="min-h-11 border border-line bg-bg px-3 text-xs text-fg focus:border-fg focus:outline-none"
+              className="h-11 rounded-lg border border-line-strong bg-bg px-3.5 text-xs font-medium text-fg focus:border-primary focus:outline-none"
             >
-              <option value={12}>Fits ≤ 12GB VRAM</option>
-              <option value={16}>Fits ≤ 16GB VRAM</option>
-              <option value={24}>Fits ≤ 24GB VRAM</option>
-              <option value={48}>Fits ≤ 48GB VRAM</option>
+              <option value={12}>Fits &le; 12 GB VRAM</option>
+              <option value={16}>Fits &le; 16 GB VRAM</option>
+              <option value={24}>Fits &le; 24 GB VRAM</option>
+              <option value={48}>Fits &le; 48 GB VRAM</option>
               <option value={128}>All Drops</option>
             </select>
             <button
               type="button"
               disabled={webhookTesting}
               onClick={handleTestWebhook}
-              className="min-h-11 border border-fg bg-fg px-4 text-2xs uppercase tracking-widest text-bg hover:opacity-90 disabled:opacity-50"
+              className="h-11 whitespace-nowrap shrink-0 rounded-lg bg-primary px-5 text-xs font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {webhookTesting ? "dispatching…" : "send test ping"}
+              {webhookTesting ? "Dispatching…" : "Send Test Ping"}
             </button>
           </div>
 
           {webhookStatus ? (
             <div
               className={cn(
-                "mt-3 text-xs font-mono p-2 border",
-                webhookStatus.startsWith("✓")
-                  ? "border-emerald-600/40 text-emerald-400 bg-emerald-950/20"
-                  : "border-rose-600/40 text-rose-400 bg-rose-950/20"
+                "mt-3 rounded-lg border px-3.5 py-2.5 font-mono text-xs",
+                webhookStatus.ok
+                  ? "border-success/40 bg-success/10 text-success"
+                  : "border-danger/40 bg-danger/10 text-danger",
               )}
             >
-              {webhookStatus}
+              {webhookStatus.text}
             </div>
           ) : null}
         </div>
       ) : null}
 
-      {/* RSS XML Modal */}
       {showRssModal ? (
-        <div className="mt-6 border border-line bg-surface p-4 sm:p-5">
+        <div className="mt-6 rounded-xl border border-line-strong bg-surface p-5">
           <div className="flex items-center justify-between">
-            <span className="text-2xs uppercase tracking-[0.24em] text-muted">
-              Live RSS 2.0 Feed Spec
-            </span>
+            <h2 className="font-display text-sm font-semibold text-fg">RSS 2.0 Feed Payload</h2>
             <button
               type="button"
               onClick={() => setShowRssModal(false)}
-              className="text-2xs uppercase text-muted hover:text-fg"
+              className="rounded-md p-1 text-muted hover:text-fg"
+              aria-label="Close RSS panel"
             >
-              close [✕]
+              <X className="h-4 w-4" />
             </button>
           </div>
-          <p className="mt-2 text-xs text-muted">
-            Add this syndication feed to Feedly, NetNewsWire, Slack RSS, or Zapier to track model drops:
+          <p className="mt-1.5 text-xs text-muted">
+            Subscribe from Feedly, NetNewsWire, Slack RSS, or automation pipelines.
           </p>
 
-          <pre className="mt-3 max-h-56 overflow-auto border border-line bg-bg p-3 text-2xs font-mono text-dim">
+          <pre className="mt-3 max-h-56 overflow-auto rounded-lg border border-line bg-bg p-3.5 font-mono text-xs text-muted">
             {rssXml || "Generating RSS feed XML payload…"}
           </pre>
 
@@ -306,107 +304,158 @@ function DropsPage() {
             <button
               type="button"
               onClick={handleCopyRss}
-              className="min-h-9 border border-fg bg-fg px-3 text-2xs uppercase tracking-widest text-bg hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-bg hover:opacity-90"
             >
-              {copiedRss ? "✓ copied xml" : "copy xml feed"}
+              {copiedRss ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copiedRss ? "Copied XML" : "Copy XML Feed"}
             </button>
             <button
               type="button"
               onClick={handleDownloadRss}
-              className="min-h-9 border border-line bg-bg px-3 text-2xs uppercase tracking-widest text-fg hover:border-fg"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-bg px-3.5 py-2 text-xs font-medium text-fg hover:bg-elevated"
             >
-              download .xml
+              <Download className="h-3.5 w-3.5" />
+              Download .xml
             </button>
           </div>
         </div>
       ) : null}
 
-      {/* Filter and search bar */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="filter live drops by name / lab / tag…"
-          className="min-h-11 flex-1 min-w-[200px] border border-line bg-surface px-3 text-xs focus:border-fg focus:outline-none"
-        />
+        <div className="relative flex-1 min-w-[240px] flex items-center">
+          <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-dim" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter drops by model name, organization, or tag…"
+            className="h-11 w-full rounded-lg border border-line-strong bg-surface pl-10 pr-4 text-sm text-fg placeholder:text-dim focus:border-primary focus:outline-none"
+          />
+        </div>
         <button
           type="button"
           onClick={() => setOnlyGguf(!onlyGguf)}
           className={cn(
-            "min-h-11 border px-3 text-xs uppercase tracking-widest transition-colors",
-            onlyGguf ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"
+            "h-11 whitespace-nowrap shrink-0 rounded-lg border px-4 text-xs font-medium transition-colors",
+            onlyGguf
+              ? "border-primary bg-primary text-bg"
+              : "border-line-strong bg-surface text-muted hover:text-fg",
           )}
         >
-          {onlyGguf ? "✓ GGUF only" : "show all formats"}
+          {onlyGguf ? "GGUF Only Active" : "Filter: GGUF Ready"}
         </button>
       </div>
 
-      {error ? <p className="mt-4 text-sm">{error}</p> : null}
-      {!items ? <p className="mt-8 text-sm text-muted">listening for drops…</p> : null}
+      {error ? (
+        <div className="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-xs text-danger">
+          {error}
+        </div>
+      ) : null}
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-2">
-        <section>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-[0.22em] text-muted">huggingface ({hf.length})</h2>
-          </div>
-          <div className="mt-3 divide-y divide-line border border-line">
-            {hf.map((d) => {
-              const gguf = isGguf(d);
-              return (
+      {!items ? (
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          {[0, 1].map((col) => (
+            <div key={col} className="space-y-3 rounded-xl border border-line bg-surface p-5">
+              <div className="h-4 w-32 rounded bg-elevated" />
+              <div className="h-14 rounded-lg bg-elevated/60" />
+              <div className="h-14 rounded-lg bg-elevated/60" />
+              <div className="h-14 rounded-lg bg-elevated/60" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          <section>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-base font-semibold text-fg">
+                Hugging Face ({hf.length})
+              </h2>
+              <span className="text-xs text-dim">Weights & Quants</span>
+            </div>
+            <div className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+              {hf.map((d) => {
+                const gguf = isGguf(d);
+                return (
+                  <a
+                    key={d.id}
+                    href={d.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block px-4 py-3.5 transition-colors hover:bg-elevated/50"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex items-center gap-2 break-all text-sm font-medium text-fg">
+                        <span>{d.name}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0 text-dim" />
+                      </div>
+                      <div className="shrink-0 font-mono text-xs tabular-nums text-dim">
+                        {timeAgo(d.when)}
+                      </div>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                      {gguf ? <span className="font-mono font-medium text-primary">GGUF</span> : null}
+                      {gguf ? <span aria-hidden="true">·</span> : null}
+                      <span className="tabular-nums">{d.likes} likes</span>
+                      {d.downloads ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="tabular-nums">{d.downloads.toLocaleString()} dl</span>
+                        </>
+                      ) : null}
+                      <span aria-hidden="true">·</span>
+                      <span>{d.summary}</span>
+                    </div>
+                  </a>
+                );
+              })}
+              {hf.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs text-dim">
+                  No matching Hugging Face drops.
+                </div>
+              ) : null}
+            </div>
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-base font-semibold text-fg">
+                GitHub ({gh.length})
+              </h2>
+              <span className="text-xs text-dim">Engines & Tooling</span>
+            </div>
+            <div className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+              {gh.map((d) => (
                 <a
                   key={d.id}
                   href={d.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block px-4 py-3 hover:bg-surface transition-colors"
+                  className="block px-4 py-3.5 transition-colors hover:bg-elevated/50"
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <div className="break-all text-sm font-medium flex items-center gap-2">
-                      {d.name}
-                      {gguf ? (
-                        <span className="border border-line px-1.5 py-0.5 text-2xs uppercase tracking-wider text-fg">
-                          GGUF
-                        </span>
-                      ) : null}
+                    <div className="flex items-center gap-2 break-all text-sm font-medium text-fg">
+                      <span>{d.name}</span>
+                      <ExternalLink className="h-3 w-3 shrink-0 text-dim" />
                     </div>
-                    <div className="shrink-0 text-2xs tabular-nums text-muted">{timeAgo(d.when)}</div>
+                    <div className="shrink-0 font-mono text-xs tabular-nums text-dim">
+                      {timeAgo(d.when)}
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-muted flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>{d.likes} likes</span>
-                    {d.downloads ? <span>· {d.downloads.toLocaleString()} dl</span> : null}
-                    <span>· {d.summary}</span>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                    <span className="tabular-nums">{(d.stars ?? d.likes).toLocaleString()} stars</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{d.summary}</span>
                   </div>
                 </a>
-              );
-            })}
-          </div>
-        </section>
-        <section>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm uppercase tracking-[0.22em] text-muted">github ({gh.length})</h2>
-          </div>
-          <div className="mt-3 divide-y divide-line border border-line">
-            {gh.map((d) => (
-              <a
-                key={d.id}
-                href={d.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block px-4 py-3 hover:bg-surface transition-colors"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="break-all text-sm font-medium">{d.name}</div>
-                  <div className="shrink-0 text-2xs tabular-nums text-muted">{timeAgo(d.when)}</div>
+              ))}
+              {gh.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs text-dim">
+                  No matching GitHub repositories.
                 </div>
-                <div className="mt-1 text-xs text-muted">
-                  {d.stars ?? d.likes} stars · {d.summary}
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      </div>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      )}
     </SiteShell>
   );
 }
-
